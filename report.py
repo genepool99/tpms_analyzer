@@ -83,6 +83,38 @@ def write_report(context):
     ignore_count = len([v for v in vehicles if v.get("category") == "ignore"])
 
     html = html_start(generated_at)
+
+    html += """
+    <div class="tabs" role="tablist" aria-label="TPMS report sections">
+      <button
+        type="button"
+        class="tab-button active"
+        data-tab-target="tab-overview"
+        onclick="showReportTab('tab-overview')"
+      >
+        Overview
+      </button>
+      <button
+        type="button"
+        class="tab-button"
+        data-tab-target="tab-charts"
+        onclick="showReportTab('tab-charts')"
+      >
+        Charts
+      </button>
+      <button
+        type="button"
+        class="tab-button"
+        data-tab-target="tab-details"
+        onclick="showReportTab('tab-details')"
+      >
+        Details
+      </button>
+    </div>
+
+    <div id="tab-overview" class="tab-panel active">
+"""
+
     html += summary_cards(
         events=events,
         sensor_summaries=sensor_summaries,
@@ -93,16 +125,31 @@ def write_report(context):
         ignore_count=ignore_count,
         ingest_stats=ingest_stats,
     )
-
     html += known_vehicle_section(known_vehicle_summaries)
     html += new_unknown_section(new_unknown_candidates)
     html += overlap_candidates_section(overlap_candidate_summaries)
     html += exact_candidates_section(exact_candidate_summaries)
+
+    html += """
+    </div>
+
+    <div id="tab-charts" class="tab-panel">
+"""
     html += charts_section()
+
+    html += """
+    </div>
+
+    <div id="tab-details" class="tab-panel">
+"""
     html += recent_passes_section(recent_pass_rows)
     html += sensor_section(sensor_summaries)
     html += recent_events_section(recent_event_rows)
     html += import_stats_section(ingest_stats, prune_stats)
+
+    html += """
+    </div>
+"""
     html += html_end(timeline_points, daily_counts, hourly_counts)
 
     REPORT_PATH.write_text(html, encoding="utf-8")
@@ -340,6 +387,49 @@ def html_start(generated_at):
     .refresh-button:disabled {{
       opacity: 0.6;
       cursor: wait;
+    }}
+
+    .tabs {{
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin: 16px 0 20px;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--card);
+    }}
+
+    .tab-button {{
+      border: 1px solid transparent;
+      border-radius: 10px;
+      padding: 10px 14px;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+    }}
+
+    .tab-button:hover {{
+      background: var(--soft);
+      color: var(--text);
+    }}
+
+    .tab-button.active {{
+      border-color: var(--border);
+      background: var(--soft);
+      color: var(--text);
+      box-shadow: 0 1px 2px rgba(0,0,0,.04);
+    }}
+
+    .tab-panel {{
+      display: none;
+    }}
+
+    .tab-panel.active {{
+      display: block;
     }}
   </style>
 </head>
@@ -899,6 +989,33 @@ def html_end(timeline_points, daily_counts, hourly_counts):
     }}
 
     makeTablesSortable();
+
+    function showReportTab(tabId) {{
+      document.querySelectorAll(".tab-panel").forEach(panel => {{
+        panel.classList.toggle("active", panel.id === tabId);
+      }});
+
+      document.querySelectorAll(".tab-button").forEach(button => {{
+        const isActive = button.getAttribute("data-tab-target") === tabId;
+        button.classList.toggle("active", isActive);
+      }});
+
+      localStorage.setItem("tpmsReportActiveTab", tabId);
+
+      if (tabId === "tab-charts" && window.Plotly) {{
+        setTimeout(() => {{
+          document.querySelectorAll("#tab-charts .js-plotly-plot").forEach(chart => {{
+            Plotly.Plots.resize(chart);
+          }});
+        }}, 50);
+      }}
+    }}
+
+    const savedTab = localStorage.getItem("tpmsReportActiveTab");
+
+    if (savedTab && document.getElementById(savedTab)) {{
+      showReportTab(savedTab);
+    }}
 
     Plotly.newPlot("timeline", [{{
       x: points.map(p => p.time),
