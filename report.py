@@ -460,6 +460,11 @@ def html_start(generated_at):
       cursor: wait;
     }}
 
+    .known-action {{
+      background: var(--known-bg);
+      color: var(--known-text);
+    }}
+
     .watch-action {{
       background: var(--watch-bg);
       color: var(--watch-text);
@@ -563,6 +568,7 @@ def known_vehicle_section(rows):
             <th>First Seen</th>
             <th>Last Seen</th>
             <th>Sensor IDs</th>
+            <th>Actions</th>
             <th>Notes</th>
           </tr>
         </thead>
@@ -570,6 +576,58 @@ def known_vehicle_section(rows):
 """
 
     for row in rows:
+        sensor_ids = row["sensor_ids"]
+        category = row["category"]
+
+        known_payload = {
+            "action": "update_category",
+            "name": row["name"],
+            "category": "known",
+            "notes": row["notes"],
+            "sensor_ids": sensor_ids,
+        }
+
+        watch_payload = {
+            "action": "update_category",
+            "name": row["name"],
+            "category": "watch",
+            "notes": row["notes"],
+            "sensor_ids": sensor_ids,
+        }
+
+        ignore_payload = {
+            "action": "update_category",
+            "name": row["name"],
+            "category": "ignore",
+            "notes": row["notes"],
+            "sensor_ids": sensor_ids,
+        }
+
+        move_button = ""
+
+        if category == "known":
+            move_button = f"""
+                <button
+                  type="button"
+                  class="small-action-button watch-action"
+                  data-payload="{safe_text(json.dumps(watch_payload))}"
+                  onclick="editVehicleMapFromButton(this)"
+                >
+                  Move to Watch
+                </button>
+"""
+        elif category == "watch":
+            move_button = f"""
+                <button
+                  type="button"
+                  class="small-action-button known-action"
+                  data-payload="{safe_text(json.dumps(known_payload))}"
+                  onclick="editVehicleMapFromButton(this)"
+                >
+                  Move to Known
+                </button>
+"""
+
         html += f"""
           <tr>
             <td>{safe_text(row["name"])}</td>
@@ -579,7 +637,20 @@ def known_vehicle_section(rows):
             <td>{safe_text(row["best_match"])}</td>
             <td>{display_time(row["first_seen"])}</td>
             <td>{display_time(row["last_seen"])}</td>
-            <td>{safe_text(", ".join(row["sensor_ids"]))}</td>
+            <td>{safe_text(", ".join(sensor_ids))}</td>
+            <td>
+              <div class="action-buttons">
+                {move_button}
+                <button
+                  type="button"
+                  class="small-action-button ignore-action"
+                  data-payload="{safe_text(json.dumps(ignore_payload))}"
+                  onclick="editVehicleMapFromButton(this)"
+                >
+                  Ignore
+                </button>
+              </div>
+            </td>
             <td>{safe_text(row["notes"])}</td>
           </tr>
 """
