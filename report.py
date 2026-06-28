@@ -4,6 +4,7 @@ from datetime import datetime
 from tpms_config import (
     DB_PATH,
     LOG_PATH,
+    MAX_CANDIDATE_SENSOR_COUNT,
     PASS_WINDOW_SECONDS,
     REFRESH_WEBHOOK_ID,
     REPORT_PATH,
@@ -1027,6 +1028,11 @@ def recent_passes_section(rows):
 """
 
     for row in rows:
+        crowded_indicator = ""
+
+        if row["sensor_count"] > MAX_CANDIDATE_SENSOR_COUNT:
+            crowded_indicator = pill("Crowded window", "unknown")
+
         html += f"""
           <tr>
             <td>{vehicle_status_html(row["known_vehicle"], row["category"])}</td>
@@ -1034,7 +1040,7 @@ def recent_passes_section(rows):
             <td>{safe_text(known_match_text(row["known_match"]))}</td>
             <td>{display_dt(row["start"])}</td>
             <td>{row["duration_seconds"]}s</td>
-            <td>{row["sensor_count"]}</td>
+            <td>{row["sensor_count"]} {crowded_indicator}</td>
             <td>{row["event_count"]}</td>
             <td>{safe_text(", ".join(row["models"]))}</td>
             <td>{safe_text(", ".join(row["sensor_ids"]))}</td>
