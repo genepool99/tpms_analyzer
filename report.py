@@ -103,6 +103,13 @@ def write_report(context):
             "pressure": e["pressure_psi"] if e["pressure_psi"] is not None else e["pressure_kpa"],
             "pressure_unit": "PSI" if e["pressure_psi"] is not None else ("kPa" if e["pressure_kpa"] is not None else ""),
             "temperature_c": e["temperature_c"],
+            "pressure_psi": e["pressure_psi"],
+            "pressure_kpa": e["pressure_kpa"],
+            "rssi": e["rssi"],
+            "snr": e["snr"],
+            "noise": e["noise"],
+            "battery_ok": e["battery_ok"],
+            "protocol": e["protocol"],
         }
         for e in events
     ]
@@ -123,7 +130,7 @@ def write_report(context):
         data-tab-target="tab-overview"
         onclick="showReportTab('tab-overview')"
       >
-        Overview ({known_count + watch_count})
+        Overview
       </button>
       <button
         type="button"
@@ -131,7 +138,7 @@ def write_report(context):
         data-tab-target="tab-charts"
         onclick="showReportTab('tab-charts')"
       >
-        Charts ({len(events)})
+        Charts
       </button>
       <button
         type="button"
@@ -139,7 +146,7 @@ def write_report(context):
         data-tab-target="tab-details"
         onclick="showReportTab('tab-details')"
       >
-        Details ({len(recent_pass_rows)})
+        Details
       </button>
       <button
         type="button"
@@ -147,7 +154,7 @@ def write_report(context):
         data-tab-target="tab-raw-packets"
         onclick="showReportTab('tab-raw-packets')"
       >
-        Raw Packets ({len(raw_packet_lines)})
+        Raw Packets
       </button>
     </div>
 
@@ -389,6 +396,32 @@ def html_start(generated_at):
       align-items: center;
       flex-wrap: wrap;
       margin: 12px 0;
+    }}
+
+    .chart-toolbar {{
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin: 0 0 20px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--card);
+    }}
+
+    .chart-toolbar label {{
+      font-weight: 800;
+    }}
+
+    .chart-toolbar select {{
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      min-width: 220px;
+      background: #ffffff;
+      color: var(--text);
     }}
 
     input {{
@@ -1080,24 +1113,60 @@ def exact_candidates_section(rows):
 
 def charts_section():
     return """
+    <div class="chart-toolbar">
+      <label for="chart-time-filter">Time range</label>
+      <select id="chart-time-filter">
+        <option value="all">All data</option>
+        <option value="24h">Last 24 hours</option>
+        <option value="7d">Last 7 days</option>
+        <option value="30d">Last 30 days</option>
+      </select>
+      <span class="muted">Filters charts using event timestamps from this report.</span>
+    </div>
+
     <div class="section">
       <h2>Detection Timeline</h2>
-      <div id="timeline" class="chart"></div>
+      <div id="timelineChart" class="chart"></div>
     </div>
 
     <div class="section">
       <h2>Daily TPMS Event Volume</h2>
-      <div id="daily" class="small-chart"></div>
+      <div id="dailyChart" class="small-chart"></div>
     </div>
 
     <div class="section">
       <h2>Hourly TPMS Event Volume</h2>
-      <div id="hourly" class="small-chart"></div>
+      <div id="hourlyChart" class="small-chart"></div>
     </div>
 
     <div class="section">
       <h2>Pressure Over Time</h2>
-      <div id="pressure" class="chart"></div>
+      <div id="pressureChart" class="chart"></div>
+    </div>
+
+    <div class="section">
+      <h2>Temperature Over Time</h2>
+      <div id="temperatureChart" class="chart"></div>
+    </div>
+
+    <div class="section">
+      <h2>Events by Model</h2>
+      <div id="modelChart" class="small-chart"></div>
+    </div>
+
+    <div class="section">
+      <h2>Events by Protocol</h2>
+      <div id="protocolChart" class="small-chart"></div>
+    </div>
+
+    <div class="section">
+      <h2>Battery Status</h2>
+      <div id="batteryChart" class="small-chart"></div>
+    </div>
+
+    <div class="section">
+      <h2>Signal Quality Over Time</h2>
+      <div id="signalChart" class="chart"></div>
     </div>
 """
 
@@ -1362,9 +1431,7 @@ def html_end(timeline_points, daily_counts, hourly_counts):
   </main>
 
   <script>
-    const points = {json.dumps(timeline_points)};
-    const dailyCounts = {json.dumps(daily_counts)};
-    const hourlyCounts = {json.dumps(hourly_counts)};
+    const allTimelinePoints = {json.dumps(timeline_points)};
     const refreshWebhookUrl = "/api/webhook/{safe_text(REFRESH_WEBHOOK_ID)}";
     const vehicleMapEditWebhookUrl = "/api/webhook/tpms-vehicle-map-edit-b8f41c6a9e73";
 
@@ -1514,57 +1581,401 @@ def html_end(timeline_points, daily_counts, hourly_counts):
       showReportTab(savedTab);
     }}
 
-    Plotly.newPlot("timeline", [{{
-      x: points.map(p => p.time),
-      y: points.map(p => p.sensor_id),
-      mode: "markers",
-      type: "scatter",
-      text: points.map(p => `${{p.sensor_id}} ${{p.model || ""}}`),
-      marker: {{ size: 7 }}
-    }}], {{
-      title: "TPMS detections by sensor ID",
-      xaxis: {{ title: "Time" }},
-      yaxis: {{ title: "TPMS Sensor ID", type: "category" }},
-      margin: {{ l: 170, r: 30, t: 50, b: 60 }}
-    }});
+    function parseChartTime(value) {{
+      const date = new Date(value);
 
-    Plotly.newPlot("daily", [{{
-      x: dailyCounts.map(d => d.date),
-      y: dailyCounts.map(d => d.count),
-      type: "bar"
-    }}], {{
-      title: "TPMS events per day",
-      xaxis: {{ title: "Date" }},
-      yaxis: {{ title: "Event count" }},
-      margin: {{ l: 70, r: 30, t: 50, b: 60 }}
-    }});
+      if (Number.isNaN(date.getTime())) {{
+        return null;
+      }}
 
-    Plotly.newPlot("hourly", [{{
-      x: hourlyCounts.map(d => d.hour),
-      y: hourlyCounts.map(d => d.count),
-      type: "bar"
-    }}], {{
-      title: "TPMS events by hour of day",
-      xaxis: {{ title: "Hour" }},
-      yaxis: {{ title: "Event count" }},
-      margin: {{ l: 70, r: 30, t: 50, b: 60 }}
-    }});
+      return date;
+    }}
 
-    const pressurePoints = points.filter(p => p.pressure !== null && p.pressure !== undefined);
+    function getNewestChartTimestamp(points) {{
+      let newest = null;
 
-    Plotly.newPlot("pressure", [{{
-      x: pressurePoints.map(p => p.time),
-      y: pressurePoints.map(p => p.pressure),
-      mode: "markers",
-      type: "scatter",
-      text: pressurePoints.map(p => `${{p.sensor_id}} ${{p.model || ""}} ${{p.pressure_unit || ""}}`),
-      marker: {{ size: 7 }}
-    }}], {{
-      title: "TPMS pressure values",
-      xaxis: {{ title: "Time" }},
-      yaxis: {{ title: "Pressure" }},
-      margin: {{ l: 80, r: 30, t: 50, b: 60 }}
-    }});
+      points.forEach(point => {{
+        const date = parseChartTime(point.time);
+
+        if (!date) return;
+
+        if (!newest || date > newest) {{
+          newest = date;
+        }}
+      }});
+
+      return newest;
+    }}
+
+    function getFilteredChartPointsByTime() {{
+      const filter = document.getElementById("chart-time-filter");
+      const selectedRange = filter ? filter.value : "all";
+
+      if (selectedRange === "all") {{
+        return allTimelinePoints;
+      }}
+
+      const newest = getNewestChartTimestamp(allTimelinePoints);
+
+      if (!newest) {{
+        return [];
+      }}
+
+      const rangeHours = {{
+        "24h": 24,
+        "7d": 24 * 7,
+        "30d": 24 * 30
+      }}[selectedRange];
+
+      if (!rangeHours) {{
+        return allTimelinePoints;
+      }}
+
+      const cutoff = newest.getTime() - (rangeHours * 60 * 60 * 1000);
+
+      return allTimelinePoints.filter(point => {{
+        const date = parseChartTime(point.time);
+        return date && date.getTime() >= cutoff && date.getTime() <= newest.getTime();
+      }});
+    }}
+
+    function localDateLabel(value) {{
+      const date = parseChartTime(value);
+
+      if (!date) {{
+        return "Unknown";
+      }}
+
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${{year}}-${{month}}-${{day}}`;
+    }}
+
+    function localHourLabel(value) {{
+      const date = parseChartTime(value);
+
+      if (!date) {{
+        return "Unknown";
+      }}
+
+      return `${{String(date.getHours()).padStart(2, "0")}}:00`;
+    }}
+
+    function countBy(points, labelFn) {{
+      const counts = new Map();
+
+      points.forEach(point => {{
+        const label = labelFn(point);
+        counts.set(label, (counts.get(label) || 0) + 1);
+      }});
+
+      return Array.from(counts.entries())
+        .map(([label, count]) => ({{ label, count }}))
+        .sort((a, b) => a.label.localeCompare(b.label));
+    }}
+
+    function countByDate(points) {{
+      return countBy(
+        points.filter(point => parseChartTime(point.time)),
+        point => localDateLabel(point.time)
+      );
+    }}
+
+    function hourlyCountsFor(points) {{
+      const counts = new Map();
+
+      for (let hour = 0; hour < 24; hour += 1) {{
+        counts.set(`${{String(hour).padStart(2, "0")}}:00`, 0);
+      }}
+
+      points.forEach(point => {{
+        if (!parseChartTime(point.time)) return;
+
+        const label = localHourLabel(point.time);
+        counts.set(label, (counts.get(label) || 0) + 1);
+      }});
+
+      return Array.from(counts.entries())
+        .map(([label, count]) => ({{ label, count }}))
+        .sort((a, b) => a.label.localeCompare(b.label));
+    }}
+
+    function numericValue(value) {{
+      if (value === null || value === undefined || value === "") {{
+        return null;
+      }}
+
+      const number = Number(value);
+      return Number.isFinite(number) ? number : null;
+    }}
+
+    function categoryValue(value) {{
+      const text = String(value || "").trim();
+      return text || "Unknown";
+    }}
+
+    function batteryStatus(value) {{
+      if (value === null || value === undefined || String(value).trim() === "") {{
+        return "Unknown";
+      }}
+
+      if (typeof value === "boolean") {{
+        return value ? "Battery OK" : "Battery Low";
+      }}
+
+      const text = String(value).trim().toLowerCase();
+
+      if (["1", "true", "ok", "yes", "y", "good"].includes(text)) {{
+        return "Battery OK";
+      }}
+
+      if (["0", "false", "low", "no", "n", "bad"].includes(text)) {{
+        return "Battery Low";
+      }}
+
+      return "Unknown";
+    }}
+
+    function groupedMetricTraces(points, valueFn, textFn) {{
+      const bySensorId = new Map();
+
+      points.forEach(point => {{
+        const value = valueFn(point);
+
+        if (value === null || value === undefined) return;
+
+        const sensorId = point.sensor_id || "Unknown";
+
+        if (!bySensorId.has(sensorId)) {{
+          bySensorId.set(sensorId, []);
+        }}
+
+        bySensorId.get(sensorId).push({{ point, value }});
+      }});
+
+      return Array.from(bySensorId.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([sensorId, rows]) => ({{
+          name: sensorId,
+          x: rows.map(row => row.point.time),
+          y: rows.map(row => row.value),
+          mode: "markers",
+          type: "scatter",
+          text: rows.map(row => textFn(row.point, row.value)),
+          marker: {{ size: 7 }}
+        }}));
+    }}
+
+    function metricTrace(name, points, field) {{
+      const rows = points
+        .map(point => ({{ point, value: numericValue(point[field]) }}))
+        .filter(row => row.value !== null);
+
+      if (rows.length < 2) {{
+        return null;
+      }}
+
+      return {{
+        name,
+        x: rows.map(row => row.point.time),
+        y: rows.map(row => row.value),
+        mode: "markers",
+        type: "scatter",
+        text: rows.map(row => `${{row.point.sensor_id || "Unknown"}} ${{name}}`),
+        marker: {{ size: 7 }}
+      }};
+    }}
+
+    function emptyChart(chartId, title, message, yAxisTitle = "") {{
+      Plotly.newPlot(chartId, [], {{
+        title,
+        xaxis: {{ title: "Time" }},
+        yaxis: {{ title: yAxisTitle }},
+        annotations: [{{
+          text: message,
+          xref: "paper",
+          yref: "paper",
+          x: 0.5,
+          y: 0.5,
+          showarrow: false,
+          font: {{ size: 14 }}
+        }}],
+        margin: {{ l: 80, r: 30, t: 50, b: 60 }}
+      }});
+    }}
+
+    function renderBarChart(chartId, title, rows, xTitle, yTitle, emptyMessage) {{
+      if (!rows.length) {{
+        emptyChart(chartId, title, emptyMessage, yTitle);
+        return;
+      }}
+
+      Plotly.newPlot(chartId, [{{
+        x: rows.map(row => row.label),
+        y: rows.map(row => row.count),
+        type: "bar"
+      }}], {{
+        title,
+        xaxis: {{ title: xTitle }},
+        yaxis: {{ title: yTitle }},
+        margin: {{ l: 70, r: 30, t: 50, b: 80 }}
+      }});
+    }}
+
+    function renderCharts() {{
+      const points = getFilteredChartPointsByTime();
+      const emptyMessage = "No data for selected time range";
+      const timeFilter = document.getElementById("chart-time-filter");
+
+      if (timeFilter) {{
+        timeFilter.removeEventListener("change", renderCharts);
+        timeFilter.addEventListener("change", renderCharts);
+      }}
+
+      if (!points.length) {{
+        emptyChart("timelineChart", "TPMS detections by sensor ID", emptyMessage, "TPMS Sensor ID");
+        emptyChart("dailyChart", "TPMS events per day", emptyMessage, "Event count");
+        emptyChart("hourlyChart", "TPMS events by hour of day", emptyMessage, "Event count");
+        emptyChart("pressureChart", "TPMS pressure values", emptyMessage, "Pressure");
+        emptyChart("temperatureChart", "TPMS temperature values", "Not enough temperature data for this time range", "Temperature (°C)");
+        emptyChart("modelChart", "Events by model", emptyMessage, "Event count");
+        emptyChart("protocolChart", "Events by protocol", emptyMessage, "Event count");
+        emptyChart("batteryChart", "Battery status", emptyMessage, "Event count");
+        emptyChart("signalChart", "TPMS signal quality", "Not enough signal data for this time range", "Signal value");
+        return;
+      }}
+
+      Plotly.newPlot("timelineChart", [{{
+        x: points.map(point => point.time),
+        y: points.map(point => point.sensor_id),
+        mode: "markers",
+        type: "scatter",
+        text: points.map(point => `${{point.sensor_id}} ${{point.model || ""}}`),
+        marker: {{ size: 7 }}
+      }}], {{
+        title: "TPMS detections by sensor ID",
+        xaxis: {{ title: "Time" }},
+        yaxis: {{ title: "TPMS Sensor ID", type: "category" }},
+        margin: {{ l: 170, r: 30, t: 50, b: 60 }}
+      }});
+
+      renderBarChart(
+        "dailyChart",
+        "TPMS events per day",
+        countByDate(points),
+        "Date",
+        "Event count",
+        emptyMessage
+      );
+
+      renderBarChart(
+        "hourlyChart",
+        "TPMS events by hour of day",
+        hourlyCountsFor(points),
+        "Hour",
+        "Event count",
+        emptyMessage
+      );
+
+      const pressurePoints = points
+        .map(point => ({{
+          point,
+          value: point.pressure_psi !== null && point.pressure_psi !== undefined ? point.pressure_psi : point.pressure_kpa,
+          unit: point.pressure_psi !== null && point.pressure_psi !== undefined ? "PSI" : (point.pressure_kpa !== null && point.pressure_kpa !== undefined ? "kPa" : "")
+        }}))
+        .filter(row => row.value !== null && row.value !== undefined);
+
+      if (pressurePoints.length) {{
+        Plotly.newPlot("pressureChart", [{{
+          x: pressurePoints.map(row => row.point.time),
+          y: pressurePoints.map(row => row.value),
+          mode: "markers",
+          type: "scatter",
+          text: pressurePoints.map(row => `${{row.point.sensor_id}} ${{row.point.model || ""}} ${{row.unit}}`),
+          marker: {{ size: 7 }}
+        }}], {{
+          title: "TPMS pressure values",
+          xaxis: {{ title: "Time" }},
+          yaxis: {{ title: "Pressure" }},
+          margin: {{ l: 80, r: 30, t: 50, b: 60 }}
+        }});
+      }} else {{
+        emptyChart("pressureChart", "TPMS pressure values", emptyMessage, "Pressure");
+      }}
+
+      const temperaturePointCount = points
+        .map(point => numericValue(point.temperature_c))
+        .filter(value => value !== null).length;
+      const temperatureTraces = groupedMetricTraces(
+        points,
+        point => numericValue(point.temperature_c),
+        point => `${{point.sensor_id}} ${{point.model || ""}} °C`
+      );
+
+      if (temperaturePointCount >= 2 && temperatureTraces.length) {{
+        Plotly.newPlot("temperatureChart", temperatureTraces, {{
+          title: "TPMS temperature values",
+          xaxis: {{ title: "Time" }},
+          yaxis: {{ title: "Temperature (°C)" }},
+          margin: {{ l: 80, r: 30, t: 50, b: 60 }}
+        }});
+      }} else {{
+        emptyChart("temperatureChart", "TPMS temperature values", "Not enough temperature data for this time range", "Temperature (°C)");
+      }}
+
+      renderBarChart(
+        "modelChart",
+        "Events by model",
+        countBy(points, point => categoryValue(point.model)),
+        "Model",
+        "Event count",
+        emptyMessage
+      );
+
+      renderBarChart(
+        "protocolChart",
+        "Events by protocol",
+        countBy(points, point => categoryValue(point.protocol)),
+        "Protocol",
+        "Event count",
+        emptyMessage
+      );
+
+      renderBarChart(
+        "batteryChart",
+        "Battery status",
+        countBy(points, point => batteryStatus(point.battery_ok)),
+        "Battery status",
+        "Event count",
+        emptyMessage
+      );
+
+      const signalTraces = [
+        metricTrace("RSSI", points, "rssi"),
+        metricTrace("SNR", points, "snr"),
+        metricTrace("Noise", points, "noise")
+      ].filter(Boolean);
+
+      if (signalTraces.length) {{
+        Plotly.newPlot("signalChart", signalTraces, {{
+          title: "TPMS signal quality",
+          xaxis: {{ title: "Time" }},
+          yaxis: {{ title: "Signal value" }},
+          margin: {{ l: 80, r: 30, t: 50, b: 60 }}
+        }});
+      }} else {{
+        emptyChart("signalChart", "TPMS signal quality", "Not enough signal data for this time range", "Signal value");
+      }}
+    }}
+
+    const chartTimeFilter = document.getElementById("chart-time-filter");
+
+    if (chartTimeFilter) {{
+      chartTimeFilter.addEventListener("change", renderCharts);
+    }}
+
+    renderCharts();
   </script>
 </body>
 </html>
