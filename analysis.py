@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from tpms_config import (
     MAX_RECENT_EVENTS,
     MAX_RECENT_PASSES,
+    MAX_CANDIDATE_SENSOR_COUNT,
     MIN_REPEAT_CLUSTER_COUNT,
     PASS_WINDOW_SECONDS,
     POSSIBLE_SENSOR_COUNT,
@@ -152,7 +153,10 @@ def summarize_exact_candidates(vehicle_passes, normalized_vehicles):
 def summarize_overlap_candidates(vehicle_passes, normalized_vehicles):
     multi_sensor_passes = [
         p for p in vehicle_passes
-        if p["sensor_count"] >= POSSIBLE_SENSOR_COUNT
+        if (
+            p["sensor_count"] >= POSSIBLE_SENSOR_COUNT
+            and p["sensor_count"] <= MAX_CANDIDATE_SENSOR_COUNT
+        )
     ]
 
     clusters = []
@@ -163,10 +167,14 @@ def summarize_overlap_candidates(vehicle_passes, normalized_vehicles):
 
         for cluster in clusters:
             overlap = current_set.intersection(cluster["sensor_set"])
+            merged_sensor_ids = cluster["sensor_set"] | current_set
 
-            if len(overlap) >= 2:
+            if (
+                len(overlap) >= 2
+                and len(merged_sensor_ids) <= MAX_CANDIDATE_SENSOR_COUNT
+            ):
                 cluster["passes"].append(vehicle_pass)
-                cluster["sensor_set"].update(current_set)
+                cluster["sensor_set"] = merged_sensor_ids
                 placed = True
                 break
 

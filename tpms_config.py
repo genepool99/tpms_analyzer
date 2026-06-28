@@ -11,10 +11,10 @@ VEHICLE_MAP_PATH = BASE_DIR / "vehicles.json"
 ENABLE_PRUNING = True
 
 # Unknown single-sensor road noise gets old fast.
-UNKNOWN_SINGLE_SENSOR_RETENTION_DAYS = 30
+UNKNOWN_SINGLE_SENSOR_RETENTION_DAYS = 180
 
 # Unknown multi-sensor candidates are more useful, so keep longer.
-UNKNOWN_MULTI_SENSOR_RETENTION_DAYS = 90
+UNKNOWN_MULTI_SENSOR_RETENTION_DAYS = 180
 
 # Never prune events tied to known/watch/ignore vehicles.
 PRESERVE_LABELED_SENSOR_EVENTS = True
@@ -26,11 +26,12 @@ STATUS_PATH = Path("/config/www/rtl_433/tpms_status.json")
 REFRESH_WEBHOOK_ID = "tpms-refresh-report-a8f3c91b7d22"
 
 # Busy road mode: short window prevents merging several passing cars.
-PASS_WINDOW_SECONDS = 15
+PASS_WINDOW_SECONDS = 5
 
-MIN_REPEAT_CLUSTER_COUNT = 2
-POSSIBLE_SENSOR_COUNT = 2
-STRONG_SENSOR_COUNT = 3
+MIN_REPEAT_CLUSTER_COUNT = 3
+POSSIBLE_SENSOR_COUNT = 3
+STRONG_SENSOR_COUNT = 4
+MAX_CANDIDATE_SENSOR_COUNT = 5
 
 MAX_RECENT_PASSES = 500
 MAX_RECENT_EVENTS = 750
