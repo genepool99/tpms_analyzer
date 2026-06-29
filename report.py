@@ -439,6 +439,94 @@ def html_start(generated_at):
       font-weight: 800;
     }}
 
+    .chart-option-row {{
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin: 6px 0 14px;
+    }}
+
+    .pressure-option-row {{
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--soft);
+    }}
+
+    .chart-toggle-control {{
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      flex: 0 0 auto;
+      color: var(--text);
+      font-weight: 800;
+      cursor: pointer;
+      user-select: none;
+    }}
+
+    .chart-toggle-control input {{
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }}
+
+    .chart-toggle-slider {{
+      position: relative;
+      width: 38px;
+      height: 22px;
+      border-radius: 999px;
+      background: #cbd5e1;
+      box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.12);
+      transition: background 0.15s ease;
+    }}
+
+    .chart-toggle-slider::after {{
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      background: #ffffff;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+      transition: transform 0.15s ease;
+    }}
+
+    .chart-toggle-control input:checked + .chart-toggle-slider {{
+      background: var(--accent);
+    }}
+
+    .chart-toggle-control input:checked + .chart-toggle-slider::after {{
+      transform: translateX(16px);
+    }}
+
+    .chart-toggle-control input:focus-visible + .chart-toggle-slider {{
+      outline: 3px solid rgba(37, 99, 235, 0.25);
+      outline-offset: 2px;
+    }}
+
+    .chart-toggle-label {{
+      white-space: nowrap;
+    }}
+
+    .chart-inline-note {{
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }}
+
+    @media (max-width: 700px) {{
+      .pressure-option-row {{
+        align-items: flex-start;
+      }}
+
+      .chart-toggle-label {{
+        white-space: normal;
+      }}
+    }}
+
     .chart-loading.active {{
       display: inline-flex;
     }}
@@ -1179,13 +1267,16 @@ def charts_section():
 
     <div class="section">
       <h2>Pressure Over Time</h2>
-      <label class="muted">
-        <input id="chart-show-suspicious-pressure" type="checkbox">
-        Show suspicious pressure points
-      </label>
-      <p id="pressureChartNote" class="muted">
-        Suspicious pressure points above 120 PSI are hidden by default. Hidden suspicious points: 0
-      </p>
+      <div class="chart-option-row pressure-option-row">
+        <label class="chart-toggle-control">
+          <input id="chart-show-suspicious-pressure" type="checkbox">
+          <span class="chart-toggle-slider" aria-hidden="true"></span>
+          <span class="chart-toggle-label">Show suspicious pressure points</span>
+        </label>
+        <span id="pressureChartNote" class="chart-inline-note">
+          Suspicious pressure points above 120 PSI are hidden by default. Hidden suspicious points: 0
+        </span>
+      </div>
       <div id="pressureChart" class="chart"></div>
     </div>
 
