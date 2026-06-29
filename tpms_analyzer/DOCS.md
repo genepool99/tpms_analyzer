@@ -13,6 +13,20 @@ output json:/config/rtl_433/logs/rtl_433.jsonl
 convert customary
 ```
 
+## Home Assistant automation setup
+
+This add-on does not automatically create Home Assistant automations, scripts, shell commands, or rtl_433 configuration.
+
+For scheduled analysis, the report Refresh button, and vehicle labeling actions, follow the copy-paste YAML setup in the project README.
+
+For the current vehicle-labeling bridge, set this add-on option:
+
+```yaml
+vehicle_map_path: /config/rtl_433/tpms_analyzer/vehicles.json
+```
+
+This lets the legacy shell_command write to the same `vehicles.json` the add-on reads. Future versions may replace this bridge with a native add-on endpoint.
+
 ## Requirements
 
 The `rtl_433` add-on must be installed and configured to write JSON Lines output to a file. The default expected path is:
