@@ -1,11 +1,17 @@
+import os
 from pathlib import Path
 
-LOG_PATH = Path("/config/rtl_433/logs/rtl_433.jsonl")
 
-BASE_DIR = Path("/config/rtl_433/tpms_analyzer")
-OUT_DIR = BASE_DIR / "output"
-DB_PATH = BASE_DIR / "tpms.sqlite"
-VEHICLE_MAP_PATH = BASE_DIR / "vehicles.json"
+def env_path(name: str, default: str) -> Path:
+    return Path(os.environ.get(name, default))
+
+
+LOG_PATH = env_path("TPMS_LOG_PATH", "/config/rtl_433/logs/rtl_433.jsonl")
+
+BASE_DIR = env_path("TPMS_BASE_DIR", "/config/rtl_433/tpms_analyzer")
+OUT_DIR = env_path("TPMS_OUT_DIR", str(BASE_DIR / "output"))
+DB_PATH = env_path("TPMS_DB_PATH", str(BASE_DIR / "tpms.sqlite"))
+VEHICLE_MAP_PATH = env_path("TPMS_VEHICLE_MAP_PATH", str(BASE_DIR / "vehicles.json"))
 
 # Retention / pruning
 ENABLE_PRUNING = True
@@ -20,10 +26,18 @@ UNKNOWN_MULTI_SENSOR_RETENTION_DAYS = 180
 PRESERVE_LABELED_SENSOR_EVENTS = True
 
 # Home Assistant serves /config/www as /local
-REPORT_PATH = Path("/config/www/rtl_433/tpms_report.html")
-STATUS_PATH = Path("/config/www/rtl_433/tpms_status.json")
+REPORT_PATH = env_path("TPMS_REPORT_PATH", "/config/www/rtl_433/tpms_report.html")
+STATUS_PATH = env_path("TPMS_STATUS_PATH", "/config/www/rtl_433/tpms_status.json")
 
-REFRESH_WEBHOOK_ID = "tpms-refresh-report-a8f3c91b7d22"
+REFRESH_WEBHOOK_ID = os.environ.get(
+    "TPMS_REFRESH_WEBHOOK_ID",
+    "tpms-refresh-report-a8f3c91b7d22",
+)
+
+VEHICLE_MAP_EDIT_WEBHOOK_ID = os.environ.get(
+    "TPMS_VEHICLE_MAP_EDIT_WEBHOOK_ID",
+    "tpms-vehicle-map-edit-b8f41c6a9e73",
+)
 
 # Busy road mode: short window prevents merging several passing cars.
 PASS_WINDOW_SECONDS = 5
@@ -54,6 +68,7 @@ TPMS_HINTS = [
 
 
 def ensure_dirs():
+    BASE_DIR.mkdir(parents=True, exist_ok=True)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    BASE_DIR.mkdir(parents=True, exist_ok=True)
+    STATUS_PATH.parent.mkdir(parents=True, exist_ok=True)
