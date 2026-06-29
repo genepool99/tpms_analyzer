@@ -70,7 +70,7 @@ In the add-on **Configuration** tab, set these options:
 | `log_path` | `/config/rtl_433/logs/rtl_433.jsonl` | Path to the rtl_433 JSONL log. Must match your rtl_433 `output json:` path. |
 | `refresh_webhook_id` | `tpms-refresh-report-a8f3c91b7d22` | Webhook ID for the report's Refresh button. Must match your HA automation. |
 | `vehicle_map_edit_webhook_id` | `tpms-vehicle-map-edit-b8f41c6a9e73` | Webhook ID for report vehicle labeling actions. Must match your HA automation. |
-| `vehicle_map_path` | `/data/vehicles.json` | Path to the vehicle map used by the add-on. Keep the default for add-on-private state, or set to `/config/rtl_433/tpms_analyzer/vehicles.json` when using the vehicle-labeling bridge below. |
+| `vehicle_map_path` | `/data/vehicles.json` | Path to the vehicle map used by the add-on. The default `/data/vehicles.json` works for all standard use cases, including vehicle labeling. |
 
 ### 4. Run and view the report
 
@@ -118,15 +118,17 @@ Open **Settings → Add-ons → TPMS Analyzer → Info** and copy the installed 
 
 Replace `ADDON_SLUG_HERE` in all examples below with your real slug.
 
-### Optional shared vehicle map path
+### Optional host-visible vehicle map path
 
-For the report's vehicle labeling buttons to work with this first add-on version, set this option in the add-on **Configuration** tab:
+Vehicle labeling works with the default add-on-private vehicle map path, `/data/vehicles.json`.
+
+Only change `vehicle_map_path` if you specifically want the vehicle map stored somewhere under `/config` for direct editing, backup, or Git tracking. For example:
 
 ```yaml
 vehicle_map_path: /config/rtl_433/tpms_analyzer/vehicles.json
 ```
 
-This tells the add-on to read and write `vehicles.json` from a path inside `/config/` instead of the default `/data/` location. The legacy shell_command that handles vehicle edits can then write to the same file the add-on reads. Future versions may replace this bridge with a native add-on endpoint.
+This is optional. It is no longer required for the vehicle-labeling bridge.
 
 ### `configuration.yaml`
 
@@ -135,10 +137,10 @@ Add this under the top-level `shell_command:` block. If `shell_command:` already
 ```yaml
 shell_command:
   tpms_edit_vehicle_map: >-
-    bash -lc 'cd /config/rtl_433/tpms_analyzer && mkdir -p output && printf "%s" "$1" | base64 -d > output/vehicle_map_edit_payload.json && python3 vehicle_map_editor.py < output/vehicle_map_edit_payload.json' _ "{{ payload }}"
+    bash -c 'mkdir -p /config/rtl_433 && printf "%s" "$1" | base64 -d > /config/rtl_433/tpms_edit_payload.json' _ "{{ payload }}"
 ```
 
-This command only handles vehicle-map edits. It does not run the analyzer. The automation starts the add-on after the edit completes (see automations below).
+This command only writes the vehicle edit payload to a shared staging file. The add-on reads that file when it starts, applies the edit internally, removes the staging file, and then regenerates the report. No TPMS Python files are needed on the Home Assistant host.
 
 ### `scripts.yaml`
 
