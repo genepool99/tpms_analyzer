@@ -62,6 +62,7 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+.claude/
 
 # Archives / manual backups
 *.bak
