@@ -1142,6 +1142,13 @@ def charts_section():
 
     <div class="section">
       <h2>Pressure Over Time</h2>
+      <label class="muted">
+        <input id="chart-show-suspicious-pressure" type="checkbox">
+        Show suspicious pressure points
+      </label>
+      <p id="pressureChartNote" class="muted">
+        Suspicious pressure points above 120 PSI are hidden by default. Hidden suspicious points: 0
+      </p>
       <div id="pressureChart" class="chart"></div>
     </div>
 
@@ -1257,7 +1264,7 @@ def sensor_section(rows):
             <th>First Seen</th>
             <th>Last Seen</th>
             <th>Model(s)</th>
-            <th>Avg Pressure</th>
+            <th>Avg Pressure (native unit)</th>
             <th>Avg Temp C</th>
             <th>Avg RSSI</th>
             <th>Avg SNR</th>
@@ -1312,7 +1319,7 @@ def recent_events_section(rows):
             <th>Time</th>
             <th>Sensor ID</th>
             <th>Model</th>
-            <th>Pressure</th>
+            <th>Pressure (native unit)</th>
             <th>Temp C</th>
             <th>RSSI</th>
             <th>SNR</th>
@@ -1750,6 +1757,78 @@ def html_end(timeline_points, daily_counts, hourly_counts):
       return Number.isFinite(number) ? number : null;
     }}
 
+    const PRESSURE_SUSPICIOUS_PSI = 120;
+
+    function pressurePointValue(point) {{
+      const pressurePsi = numericValue(point.pressure_psi);
+
+      if (pressurePsi !== null) {{
+        return {{
+          normalizedPsi: pressurePsi,
+          originalValue: pressurePsi,
+          originalUnit: "PSI"
+        }};
+      }}
+
+      const pressureKpa = numericValue(point.pressure_kpa);
+
+      if (pressureKpa !== null) {{
+        return {{
+          normalizedPsi: pressureKpa * 0.145038,
+          originalValue: pressureKpa,
+          originalUnit: "kPa"
+        }};
+      }}
+
+      return null;
+    }}
+
+    function formatPressure(value) {{
+      return Number(value).toFixed(1);
+    }}
+
+    function pressureHoverText(row, isSuspicious = false) {{
+      const model = row.point.model || "Unknown";
+      const protocol = row.point.protocol || "Unknown";
+      const temperatureC = numericValue(row.point.temperature_c);
+      const temperatureText = temperatureC !== null
+        ? `<br>Temperature C: ${{temperatureC.toFixed(1)}}`
+        : "";
+      return [
+        isSuspicious ? "Suspicious high pressure<br>" : "",
+        `Sensor ID: ${{row.point.sensor_id}}`,
+        `<br>Model: ${{model}}`,
+        `<br>Protocol: ${{protocol}}`,
+        temperatureText,
+        `<br>Original pressure: ${{formatPressure(row.originalValue)}} ${{row.originalUnit}}`,
+        `<br>Normalized pressure: ${{formatPressure(row.normalizedPsi)}} PSI`
+      ].join("");
+    }}
+
+    function pressureTrace(name, rows, isSuspicious = false) {{
+      return {{
+        name,
+        x: rows.map(row => row.point.time),
+        y: rows.map(row => Number(formatPressure(row.normalizedPsi))),
+        mode: "markers",
+        type: "scatter",
+        text: rows.map(row => pressureHoverText(row, isSuspicious)),
+        hovertemplate: "%{{text}}<extra></extra>",
+        marker: {{
+          size: isSuspicious ? 8 : 7,
+          symbol: isSuspicious ? "x" : "circle"
+        }}
+      }};
+    }}
+
+    function updatePressureChartNote(hiddenSuspiciousCount) {{
+      const note = document.getElementById("pressureChartNote");
+
+      if (!note) return;
+
+      note.textContent = `Suspicious pressure points above ${{PRESSURE_SUSPICIOUS_PSI}} PSI are hidden by default. Hidden suspicious points: ${{hiddenSuspiciousCount}}`;
+    }}
+
     function categoryValue(value) {{
       const text = String(value || "").trim();
       return text || "Unknown";
@@ -1900,17 +1979,25 @@ def html_end(timeline_points, daily_counts, hourly_counts):
       const points = getFilteredChartPointsByTime();
       const emptyMessage = "No data for selected time range";
       const timeFilter = document.getElementById("chart-time-filter");
+      const suspiciousPressureToggle = document.getElementById("chart-show-suspicious-pressure");
+      const showSuspiciousPressure = Boolean(suspiciousPressureToggle && suspiciousPressureToggle.checked);
 
       if (timeFilter) {{
         timeFilter.removeEventListener("change", renderCharts);
         timeFilter.addEventListener("change", renderCharts);
       }}
 
+      if (suspiciousPressureToggle) {{
+        suspiciousPressureToggle.removeEventListener("change", renderCharts);
+        suspiciousPressureToggle.addEventListener("change", renderCharts);
+      }}
+
       if (!points.length) {{
+        updatePressureChartNote(0);
         emptyChart("timelineChart", "TPMS detections by sensor ID", emptyMessage, "TPMS Sensor ID");
         emptyChart("dailyChart", "TPMS events per day", emptyMessage, "Event count");
         emptyChart("hourlyChart", "TPMS events by hour of day", emptyMessage, "Event count");
-        emptyChart("pressureChart", "TPMS pressure values", emptyMessage, "Pressure");
+        emptyChart("pressureChart", "TPMS pressure values, normalized to PSI", emptyMessage, "Pressure (PSI)");
         emptyChart("temperatureChart", "TPMS temperature values", "Not enough temperature data for this time range", "Temperature (°C)");
         emptyChart("modelChart", "Events by model", emptyMessage, "Event count");
         emptyChart("batteryChart", "Confirmed Battery Status", emptyMessage, "Event count");
@@ -1952,29 +2039,49 @@ def html_end(timeline_points, daily_counts, hourly_counts):
       );
 
       const pressurePoints = points
-        .map(point => ({{
-          point,
-          value: point.pressure_psi !== null && point.pressure_psi !== undefined ? point.pressure_psi : point.pressure_kpa,
-          unit: point.pressure_psi !== null && point.pressure_psi !== undefined ? "PSI" : (point.pressure_kpa !== null && point.pressure_kpa !== undefined ? "kPa" : "")
-        }}))
-        .filter(row => row.value !== null && row.value !== undefined);
+        .map(point => {{
+          const pressure = pressurePointValue(point);
+
+          if (!pressure) return null;
+
+          return {{
+            point,
+            normalizedPsi: pressure.normalizedPsi,
+            originalValue: pressure.originalValue,
+            originalUnit: pressure.originalUnit,
+            isSuspicious: pressure.normalizedPsi > PRESSURE_SUSPICIOUS_PSI
+          }};
+        }})
+        .filter(row => row !== null);
+      const normalPressurePoints = pressurePoints.filter(row => !row.isSuspicious);
+      const suspiciousPressurePoints = pressurePoints.filter(row => row.isSuspicious);
+      const hiddenSuspiciousCount = showSuspiciousPressure ? 0 : suspiciousPressurePoints.length;
+
+      updatePressureChartNote(hiddenSuspiciousCount);
 
       if (pressurePoints.length) {{
-        Plotly.newPlot("pressureChart", [{{
-          x: pressurePoints.map(row => row.point.time),
-          y: pressurePoints.map(row => row.value),
-          mode: "markers",
-          type: "scatter",
-          text: pressurePoints.map(row => `${{row.point.sensor_id}} ${{row.point.model || ""}} ${{row.unit}}`),
-          marker: {{ size: 7 }}
-        }}], {{
-          title: "TPMS pressure values",
-          xaxis: {{ title: "Time" }},
-          yaxis: {{ title: "Pressure" }},
-          margin: {{ l: 80, r: 30, t: 50, b: 60 }}
-        }});
+        const pressureTraces = [];
+
+        if (normalPressurePoints.length) {{
+          pressureTraces.push(pressureTrace("Pressure", normalPressurePoints));
+        }}
+
+        if (showSuspiciousPressure && suspiciousPressurePoints.length) {{
+          pressureTraces.push(pressureTrace("Suspicious pressure", suspiciousPressurePoints, true));
+        }}
+
+        if (pressureTraces.length) {{
+          Plotly.newPlot("pressureChart", pressureTraces, {{
+            title: "TPMS pressure values, normalized to PSI",
+            xaxis: {{ title: "Time" }},
+            yaxis: {{ title: "Pressure (PSI)" }},
+            margin: {{ l: 80, r: 30, t: 50, b: 60 }}
+          }});
+        }} else {{
+          emptyChart("pressureChart", "TPMS pressure values, normalized to PSI", "Only suspicious pressure points in this time range", "Pressure (PSI)");
+        }}
       }} else {{
-        emptyChart("pressureChart", "TPMS pressure values", emptyMessage, "Pressure");
+        emptyChart("pressureChart", "TPMS pressure values, normalized to PSI", emptyMessage, "Pressure (PSI)");
       }}
 
       const temperaturePointCount = points
