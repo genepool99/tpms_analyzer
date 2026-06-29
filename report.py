@@ -109,6 +109,7 @@ def write_report(context):
             "snr": e["snr"],
             "noise": e["noise"],
             "battery_ok": e["battery_ok"],
+            "maybe_battery": e.get("maybe_battery"),
             "protocol": e["protocol"],
         }
         for e in events
@@ -1161,6 +1162,12 @@ def charts_section():
     </div>
 
     <div class="section">
+      <h2>Unconfirmed Battery Signal</h2>
+      <p class="muted">Raw rtl_433 maybe_battery decoder hint. This is not interpreted as Battery OK/Low.</p>
+      <div id="maybeBatteryChart" class="chart"></div>
+    </div>
+
+    <div class="section">
       <h2>Signal Quality Over Time</h2>
       <div id="signalChart" class="chart"></div>
     </div>
@@ -1800,6 +1807,37 @@ def html_end(timeline_points, daily_counts, hourly_counts):
         }}));
     }}
 
+    function maybeBatteryTraces(points) {{
+      const byModel = new Map();
+
+      points.forEach(point => {{
+        const value = numericValue(point.maybe_battery);
+
+        if (value === null) return;
+
+        const model = categoryValue(point.model);
+
+        if (!byModel.has(model)) {{
+          byModel.set(model, []);
+        }}
+
+        byModel.get(model).push({{ point, value }});
+      }});
+
+      return Array.from(byModel.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([model, rows]) => ({{
+          name: model,
+          x: rows.map(row => row.point.time),
+          y: rows.map(row => row.value),
+          mode: "markers",
+          type: "scatter",
+          text: rows.map(row => `${{row.point.sensor_id || "Unknown"}}<br>${{row.point.model || "Unknown"}}<br>Protocol: ${{row.point.protocol || "Unknown"}}<br>maybe_battery: ${{row.value}}`),
+          hovertemplate: "%{{text}}<extra></extra>",
+          marker: {{ size: 7 }}
+        }}));
+    }}
+
     function metricTrace(name, points, field) {{
       const rows = points
         .map(point => ({{ point, value: numericValue(point[field]) }}))
@@ -1876,6 +1914,7 @@ def html_end(timeline_points, daily_counts, hourly_counts):
         emptyChart("temperatureChart", "TPMS temperature values", "Not enough temperature data for this time range", "Temperature (°C)");
         emptyChart("modelChart", "Events by model", emptyMessage, "Event count");
         emptyChart("batteryChart", "Confirmed Battery Status", emptyMessage, "Event count");
+        emptyChart("maybeBatteryChart", "Unconfirmed battery signal", "Not enough maybe_battery data for this time range", "maybe_battery raw value");
         emptyChart("signalChart", "TPMS signal quality", "Not enough signal data for this time range", "Signal value");
         return;
       }}
@@ -1975,6 +2014,22 @@ def html_end(timeline_points, daily_counts, hourly_counts):
         "Event count",
         emptyMessage
       );
+
+      const maybeBatteryPointCount = points
+        .map(point => numericValue(point.maybe_battery))
+        .filter(value => value !== null).length;
+      const maybeBatteryRows = maybeBatteryTraces(points);
+
+      if (maybeBatteryPointCount >= 2 && maybeBatteryRows.length) {{
+        Plotly.newPlot("maybeBatteryChart", maybeBatteryRows, {{
+          title: "Unconfirmed battery signal",
+          xaxis: {{ title: "Time" }},
+          yaxis: {{ title: "maybe_battery raw value" }},
+          margin: {{ l: 80, r: 30, t: 50, b: 60 }}
+        }});
+      }} else {{
+        emptyChart("maybeBatteryChart", "Unconfirmed battery signal", "Not enough maybe_battery data for this time range", "maybe_battery raw value");
+      }}
 
       const signalTraces = [
         metricTrace("RSSI", points, "rssi"),
