@@ -1155,7 +1155,8 @@ def charts_section():
     </div>
 
     <div class="section">
-      <h2>Battery Status</h2>
+      <h2>Confirmed Battery Status</h2>
+      <p class="muted">Uses confirmed battery_ok / battery fields only. maybe_battery is not interpreted.</p>
       <div id="batteryChart" class="small-chart"></div>
     </div>
 
@@ -1874,7 +1875,7 @@ def html_end(timeline_points, daily_counts, hourly_counts):
         emptyChart("pressureChart", "TPMS pressure values", emptyMessage, "Pressure");
         emptyChart("temperatureChart", "TPMS temperature values", "Not enough temperature data for this time range", "Temperature (°C)");
         emptyChart("modelChart", "Events by model", emptyMessage, "Event count");
-        emptyChart("batteryChart", "Battery status", emptyMessage, "Event count");
+        emptyChart("batteryChart", "Confirmed Battery Status", emptyMessage, "Event count");
         emptyChart("signalChart", "TPMS signal quality", "Not enough signal data for this time range", "Signal value");
         return;
       }}
@@ -1968,7 +1969,7 @@ def html_end(timeline_points, daily_counts, hourly_counts):
 
       renderBarChart(
         "batteryChart",
-        "Battery status",
+        "Confirmed Battery Status",
         countBy(points, point => batteryStatus(point.battery_ok)),
         "Battery status",
         "Event count",
