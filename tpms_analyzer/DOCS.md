@@ -1,84 +1,63 @@
 # TPMS Analyzer
 
-Reads `rtl_433` JSONL log data, stores TPMS events in SQLite, groups repeated sensor IDs into vehicle pass candidates, matches known/watch/ignored vehicles, and generates an HTML report served by Home Assistant.
+## Overview
 
-## Before installing
+TPMS Analyzer is a persistent Home Assistant add-on service for `rtl_433` TPMS JSONL logs. It imports tire-pressure sensor events, groups likely vehicle passes, helps identify known, watch, and unknown sensors, and serves a Home Assistant-friendly report through Ingress/sidebar or direct access on port `8099` when exposed.
 
-Install and configure the `rtl_433` Home Assistant add-on first. TPMS Analyzer reads the JSONL log written by `rtl_433`; it does not run `rtl_433` itself.
-
-The expected `rtl_433.conf.template` output is:
+The expected default `rtl_433` JSONL log path is:
 
 ```text
-output json:/config/rtl_433/logs/rtl_433.jsonl
-convert customary
-```
-
-## Home Assistant automation setup
-
-This add-on does not automatically create Home Assistant automations, scripts, shell commands, or rtl_433 configuration.
-
-For scheduled analysis, the report Refresh button, and vehicle labeling actions, follow the copy-paste YAML setup in the project README.
-
-Vehicle labeling works with the default `vehicle_map_path`, `/data/vehicles.json`.
-
-The Home Assistant `shell_command` only writes a staging payload file to `/config/rtl_433/tpms_edit_payload.json`. When the add-on starts, it applies that payload internally using `vehicle_map_editor.py` inside the container, removes the staging file, and regenerates the report.
-
-Only change `vehicle_map_path` if you want the vehicle map stored somewhere under `/config` for direct editing, backup, or Git tracking.
-
-## Requirements
-
-The `rtl_433` add-on must be installed and configured to write JSON Lines output to a file. The default expected path is:
-
-```
 /config/rtl_433/logs/rtl_433.jsonl
 ```
 
-Add the following to your `rtl_433.conf.template`:
+## Configuration
 
-```
-output json:/config/rtl_433/logs/rtl_433.jsonl
-```
+| Option                      | Default                              | Description                                                |
+| -----------------------------| --------------------------------------| ------------------------------------------------------------|
+| `log_path`                  | `/config/rtl_433/logs/rtl_433.jsonl` | Path to the `rtl_433` JSONL log file.                      |
+| `vehicle_map_path`          | `/data/vehicles.json`                | Persistent vehicle-label map used by the report UI.        |
+| `scheduled_refresh_enabled` | `true`                               | Enables the internal daily scheduled refresh.              |
+| `scheduled_refresh_time`    | `03:10`                              | Daily refresh time in `HH:MM` using the add-on local time. |
 
-## Add-on options
+## Using the add-on
 
-| Option | Default | Description |
-|---|---|---|
-| `log_path` | `/config/rtl_433/logs/rtl_433.jsonl` | Path to the rtl_433 JSONL log file. |
-| `refresh_webhook_id` | `tpms-refresh-report-a8f3c91b7d22` | Webhook ID used by the report's Refresh button to trigger re-analysis. Must match the webhook ID in your HA automation. |
-| `vehicle_map_edit_webhook_id` | `tpms-vehicle-map-edit-b8f41c6a9e73` | Webhook ID used by the report's vehicle labeling actions. Must match the webhook ID in your HA automation. |
-| `vehicle_map_path` | `/data/vehicles.json` | Path to the vehicle map. The default `/data/vehicles.json` works for all standard use cases, including vehicle labeling. |
+* Start the add-on from Home Assistant.
+* Open TPMS Analyzer from the Home Assistant sidebar or click **Open Web UI** on the add-on page.
+* Click **Refresh** in the report for manual analysis.
+* Use the report vehicle-labeling controls to add or update sensor labels.
+* Leave scheduled refresh enabled to refresh the report daily.
 
-## Viewing the report
+## Endpoints
 
-After the add-on runs, the HTML report is available at:
+| Method | Path                | Description                                                          |
+| --------| ---------------------| ----------------------------------------------------------------------|
+| GET    | `/health`           | Checks service health.                                               |
+| GET    | `/`                 | Serves the HTML report.                                              |
+| GET    | `/report`           | Serves the HTML report.                                              |
+| POST   | `/refresh`          | Runs analysis and regenerates the report.                            |
+| POST   | `/vehicle-map-edit` | Applies report UI vehicle-labeling changes and refreshes the report. |
 
-```
-http://your-ha-instance/local/rtl_433/tpms_report.html
-```
+## Data locations
 
-To add it as a Home Assistant dashboard panel:
-
-1. Go to **Settings → Dashboards**.
-2. Click **Add Dashboard**.
-3. Choose **Webpage**.
-4. Set the URL to `/local/rtl_433/tpms_report.html`.
-
-## Scheduling
-
-This version of the add-on runs once and exits (`startup: once`, `boot: manual`). It does not replace your existing Home Assistant automations. Continue triggering analysis via your existing shell command or HA automation, or start the add-on manually from the add-on panel.
-
-Persistent state (SQLite database, vehicle map, backups) is stored inside the add-on's `/data` volume and survives add-on restarts and updates.
+| Path | Purpose |
+|---|---|
+| `/data/vehicles.json` | Persistent vehicle labels. |
+| `/data/tpms.sqlite` | SQLite event database. |
+| `/data/output/` | Vehicle-map backups and support output. |
+| `/config/www/rtl_433/tpms_report.html` | Published HTML report. |
+| `/config/www/rtl_433/tpms_status.json` | Published status JSON. |
 
 ## Troubleshooting
 
-**Report not found at `/local/rtl_433/tpms_report.html`**
-Check that `/config/www/rtl_433/tpms_report.html` exists. If `/config/www/` was newly created, restart Home Assistant Core once.
+**No report**
+Check `log_path`, confirm the file exists, then click **Refresh** in the report UI.
 
-**No TPMS events imported**
-Verify the `log_path` option points to an existing file with content. Check the add-on log output for `Log does not exist` warnings.
+**No data**
+Confirm `rtl_433` is writing JSONL records to the configured log path.
 
-**Webhook buttons not working**
-Confirm the `refresh_webhook_id` and `vehicle_map_edit_webhook_id` options match the webhook IDs defined in your HA automations.
+**Label changes not saving**
+Check `vehicle_map_path` and review the add-on logs for write or validation errors.
 
-**Vehicle map is missing or blank after install**
-On first run the add-on creates `vehicles.json` in its `/data` volume if it does not already exist. Populate it using the labeling actions in the report, or copy your existing `vehicles.json` into the add-on data directory.
+**Scheduled refresh did not run**
+Confirm `scheduled_refresh_enabled` is `true`, check `scheduled_refresh_time`, and review the add-on logs.
+
