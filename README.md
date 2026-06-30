@@ -24,8 +24,8 @@ TPMS Analyzer does not receive radio traffic directly. It reads TPMS events from
 
 Install and start `rtl_433` before using TPMS Analyzer. In Home Assistant, one common option is the `rtl_433` add-on repository:
 
-<a href="https://my.home-assistant.io/redirect/supervisor_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fpbkhrv%2Frtl_433-hass-addons" target="_blank">
-  <img src="https://my.home-assistant.io/badges/supervisor_addon_repository.svg" alt="Add rtl_433 add-on repository to Home Assistant">
+<a href="https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fpbkhrv%2Frtl_433-hass-addons" target="_blank" rel="noreferrer noopener">
+  <img src="https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg" alt="Open your Home Assistant instance and add the rtl_433 add-on repository.">
 </a>
 
 ```text
@@ -50,8 +50,8 @@ The TPMS Analyzer add-on `log_path` option must match the `rtl_433` output path.
 
 1. Add this repository to the Home Assistant Add-on Store:
 
-   <a href="https://my.home-assistant.io/redirect/supervisor_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fgenepool99%2Ftpms_analyzer" target="_blank">
-     <img src="https://my.home-assistant.io/badges/supervisor_addon_repository.svg" alt="Add TPMS Analyzer repository to Home Assistant">
+   <a href="https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fgenepool99%2Ftpms_analyzer" target="_blank" rel="noreferrer noopener">
+     <img src="https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg" alt="Open your Home Assistant instance and add the TPMS Analyzer add-on repository.">
    </a>
 
    ```text
