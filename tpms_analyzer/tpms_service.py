@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
+import datetime
 import json
 import os
 import socketserver
 import threading
+import time
 import traceback
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -21,6 +23,79 @@ CORS_HEADERS = {
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
 }
+
+
+def _env_bool(name, default):
+    value = os.environ.get(name, default)
+    return str(value).strip().lower() in ("1", "true", "yes", "on")
+
+
+def _parse_refresh_time(value):
+    try:
+        hour_text, minute_text = str(value).strip().split(":", 1)
+        hour = int(hour_text)
+        minute = int(minute_text)
+        if 0 <= hour <= 23 and 0 <= minute <= 59:
+            return hour, minute
+    except (TypeError, ValueError):
+        pass
+
+    print(
+        f"TPMS service: invalid scheduled refresh time {value!r}; falling back to 03:10",
+        flush=True,
+    )
+    return 3, 10
+
+
+def _scheduler_loop(hour, minute, initial_last_run_date):
+    last_scheduled_run_date = initial_last_run_date
+    print(f"TPMS service: scheduled refresh enabled at {hour:02d}:{minute:02d}", flush=True)
+
+    while True:
+        now = datetime.datetime.now()
+        today = now.date()
+        scheduled_time_reached = (now.hour, now.minute) >= (hour, minute)
+
+        if scheduled_time_reached and last_scheduled_run_date != today:
+            last_scheduled_run_date = today
+
+            if not _run_lock.acquire(blocking=False):
+                print(
+                    "TPMS service: scheduled refresh skipped; analysis already in progress",
+                    flush=True,
+                )
+            else:
+                try:
+                    print("TPMS service: scheduled refresh starting", flush=True)
+                    analyze_tpms.main()
+                    print("TPMS service: scheduled refresh complete", flush=True)
+                except Exception as exc:
+                    print(f"TPMS service: scheduled refresh error: {exc}", flush=True)
+                    traceback.print_exc()
+                finally:
+                    _run_lock.release()
+
+        time.sleep(30)
+
+
+def _start_scheduler():
+    enabled = _env_bool("TPMS_SCHEDULED_REFRESH_ENABLED", "true")
+    if not enabled:
+        print("TPMS service: scheduled refresh disabled", flush=True)
+        return
+
+    hour, minute = _parse_refresh_time(os.environ.get("TPMS_SCHEDULED_REFRESH_TIME", "03:10"))
+    now = datetime.datetime.now()
+    initial_last_run_date = None
+    if (now.hour, now.minute) >= (hour, minute):
+        initial_last_run_date = now.date()
+
+    thread = threading.Thread(
+        target=_scheduler_loop,
+        args=(hour, minute, initial_last_run_date),
+        daemon=True,
+    )
+    thread.start()
 
 
 class ThreadedHTTPServer(socketserver.ThreadingMixIn, HTTPServer):
@@ -155,6 +230,7 @@ class TPMSHandler(BaseHTTPRequestHandler):
 def main():
     server = ThreadedHTTPServer(("0.0.0.0", SERVICE_PORT), TPMSHandler)
     print(f"TPMS service: listening on 0.0.0.0:{SERVICE_PORT}", flush=True)
+    _start_scheduler()
     server.serve_forever()
 
 
