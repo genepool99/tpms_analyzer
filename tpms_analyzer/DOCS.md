@@ -20,12 +20,6 @@ Install the `rtl_433` add-on from that repository, then configure `rtl_433` to w
 /config/rtl_433/logs/rtl_433.jsonl
 ```
 
-Example `rtl_433` output line:
-
-```text
-output json:/config/rtl_433/logs/rtl_433.jsonl
-```
-
 The TPMS Analyzer add-on `log_path` option must match the `rtl_433` output path.
 
 ## Configuration
@@ -57,13 +51,13 @@ The TPMS Analyzer add-on `log_path` option must match the `rtl_433` output path.
 
 ## Data locations
 
-| Path | Purpose |
-|---|---|
-| `/data/vehicles.json` | Persistent vehicle labels. |
-| `/data/tpms.sqlite` | SQLite event database. |
-| `/data/output/` | Vehicle-map backups and support output. |
-| `/config/www/rtl_433/tpms_report.html` | Published HTML report. |
-| `/config/www/rtl_433/tpms_status.json` | Published status JSON. |
+| Path                                   | Purpose                                 |
+| ----------------------------------------| -----------------------------------------|
+| `/data/vehicles.json`                  | Persistent vehicle labels.              |
+| `/data/tpms.sqlite`                    | SQLite event database.                  |
+| `/data/output/`                        | Vehicle-map backups and support output. |
+| `/config/www/rtl_433/tpms_report.html` | Published HTML report.                  |
+| `/config/www/rtl_433/tpms_status.json` | Published status JSON.                  |
 
 ## Troubleshooting
 
