@@ -9,6 +9,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import analyze_tpms
 import vehicle_map_editor
+from tpms_config import REPORT_PATH
 from vehicle_map_editor import VehicleMapEditError
 
 SERVICE_PORT = int(os.environ.get("TPMS_SERVICE_PORT", 8099))
@@ -47,9 +48,31 @@ class TPMSHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", "0")
         self.end_headers()
 
+    def send_html(self, code, body: bytes):
+        self.send_response(code)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        for name, value in CORS_HEADERS.items():
+            self.send_header(name, value)
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _send_report(self):
+        if not REPORT_PATH.exists():
+            self.send_json(404, {"ok": False, "error": "Report has not been generated yet"})
+            return
+        try:
+            body = REPORT_PATH.read_bytes()
+        except Exception as exc:
+            self.send_json(500, {"ok": False, "error": str(exc)})
+            return
+        self.send_html(200, body)
+
     def do_GET(self):
         if self.path == "/health":
             self.send_json(200, {"ok": True, "service": "tpms_analyzer"})
+        elif self.path in ("/", "/report"):
+            self._send_report()
         else:
             self.send_json(404, {"ok": False, "error": "Not found"})
 
