@@ -13,6 +13,8 @@ TPMS Analyzer is a Home Assistant add-on for `rtl_433` TPMS JSONL logs. It impor
 * Supports direct web access on port `8099` when exposed.
 * Runs manual and scheduled refreshes inside the add-on.
 
+![TPMS Analyzer report screenshot](assets/tpms-report-screenshot.png)
+
 ## Requirements
 
 * Home Assistant with add-on support.
