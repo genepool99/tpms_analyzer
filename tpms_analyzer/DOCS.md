@@ -4,11 +4,29 @@
 
 TPMS Analyzer is a persistent Home Assistant add-on service for `rtl_433` TPMS JSONL logs. It imports tire-pressure sensor events, groups likely vehicle passes, helps identify known, watch, and unknown sensors, and serves a Home Assistant-friendly report through Ingress/sidebar or direct access on port `8099` when exposed.
 
-The expected default `rtl_433` JSONL log path is:
+## rtl_433 requirement
+
+TPMS Analyzer does not receive radio traffic directly. It reads TPMS events from an `rtl_433` JSONL log file.
+
+Install and start `rtl_433` before using TPMS Analyzer. In Home Assistant, one common option is the `rtl_433` add-on repository:
+
+```text
+https://github.com/pbkhrv/rtl_433-hass-addons
+```
+
+Install the `rtl_433` add-on from that repository, then configure `rtl_433` to write JSON output to:
 
 ```text
 /config/rtl_433/logs/rtl_433.jsonl
 ```
+
+Example `rtl_433` output line:
+
+```text
+output json:/config/rtl_433/logs/rtl_433.jsonl
+```
+
+The TPMS Analyzer add-on `log_path` option must match the `rtl_433` output path.
 
 ## Configuration
 

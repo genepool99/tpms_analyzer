@@ -16,19 +16,31 @@ TPMS Analyzer is a Home Assistant add-on for `rtl_433` TPMS JSONL logs. It impor
 ## Requirements
 
 * Home Assistant with add-on support.
-* `rtl_433` or the `rtl_433` add-on producing JSONL logs at the configured path.
+* `rtl_433` producing a JSONL log at the path configured in TPMS Analyzer.
 
-The default expected log path is:
+## rtl_433 requirement
+
+TPMS Analyzer does not receive radio traffic directly. It reads TPMS events from an `rtl_433` JSONL log file.
+
+Install and start `rtl_433` before using TPMS Analyzer. In Home Assistant, one common option is the `rtl_433` add-on repository:
+
+```text
+https://github.com/pbkhrv/rtl_433-hass-addons
+```
+
+Install the `rtl_433` add-on from that repository, then configure `rtl_433` to write JSON output to:
 
 ```text
 /config/rtl_433/logs/rtl_433.jsonl
 ```
 
-A typical `rtl_433.conf.template` output line is:
+Example `rtl_433` output line:
 
 ```text
 output json:/config/rtl_433/logs/rtl_433.jsonl
 ```
+
+The TPMS Analyzer add-on `log_path` option must match the `rtl_433` output path.
 
 ## Install
 
