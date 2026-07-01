@@ -912,6 +912,52 @@ def html_start(generated_at):
     .candidate-drawer-close:hover {{
       background: var(--border);
     }}
+
+    .drawer-pill-row {{
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 12px;
+    }}
+
+    .drawer-vehicle-name {{
+      font-weight: 600;
+    }}
+
+    .drawer-stat-grid {{
+      margin-bottom: 10px;
+    }}
+
+    .drawer-block {{
+      margin-top: 12px;
+      margin-bottom: 12px;
+    }}
+
+    .drawer-pill-list {{
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }}
+
+    .drawer-note-hint {{
+      margin-top: 4px;
+      font-style: italic;
+    }}
+
+    .drawer-section-heading {{
+      font-weight: 700;
+      margin-bottom: 6px;
+    }}
+
+    .matching-summary-value--sm {{
+      font-size: 14px;
+    }}
+
+    .chart-inline-note--spaced {{
+      margin-top: 8px;
+    }}
   </style>
 </head>
 <body>
@@ -952,7 +998,6 @@ def html_start(generated_at):
           </div>
         </div>
       </div>
-      <span class="muted">Monitors your labeled vehicles and groups repeated unknown signals into candidate vehicles for review.</span>
     </div>
 """
 
@@ -2121,21 +2166,21 @@ def html_end(timeline_points, daily_counts, hourly_counts):
       const sensorIds = Array.isArray(c.sensor_ids) ? c.sensor_ids : [];
       let html = "";
 
-      html += `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">`;
+      html += `<div class="drawer-pill-row">`;
       if (c.confidence) html += `<span class="pill info">${{escHtml(c.confidence)}}</span>`;
       if (c.category) html += `<span class="pill ${{escHtml(c.category)}}">${{escHtml(c.category)}}</span>`;
-      if (c.known_vehicle) html += `<span style="font-weight:600;">${{escHtml(c.known_vehicle)}}</span>`;
+      if (c.known_vehicle) html += `<span class="drawer-vehicle-name">${{escHtml(c.known_vehicle)}}</span>`;
       html += `</div>`;
 
-      html += `<div class="matching-summary-grid" style="margin-bottom:12px;">`;
+      html += `<div class="matching-summary-grid drawer-stat-grid">`;
       html += `<div class="matching-summary-item"><span class="matching-summary-value">${{escHtml(c.sensor_count ?? "")}}</span><span class="matching-summary-label">Sensors</span></div>`;
       html += `<div class="matching-summary-item"><span class="matching-summary-value">${{escHtml(c.pass_count ?? "")}}</span><span class="matching-summary-label">Passes</span></div>`;
       html += `</div>`;
 
       const patternLabels = Array.isArray(c.pattern_labels) ? c.pattern_labels : [];
       if (patternLabels.length > 0) {{
-        html += `<div style="margin-bottom:12px;">`;
-        html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">`;
+        html += `<div class="drawer-block">`;
+        html += `<div class="drawer-pill-list">`;
         patternLabels.forEach(label => {{
           html += `<span class="pill info">${{escHtml(label.text)}}</span>`;
         }});
@@ -2143,12 +2188,12 @@ def html_end(timeline_points, daily_counts, hourly_counts):
         patternLabels.forEach(label => {{
           html += `<div class="chart-inline-note">${{escHtml(label.caveat)}}</div>`;
         }});
-        html += `<div class="chart-inline-note" style="margin-top:4px;font-style:italic;">Pattern hints are educated guesses from this report, not confirmed identities.</div>`;
+        html += `<div class="chart-inline-note drawer-note-hint">Pattern hints are educated guesses from this report, not confirmed identities.</div>`;
         html += `</div>`;
       }}
 
-      html += `<div style="margin-top:12px;margin-bottom:12px;">`;
-      html += `<div class="chart-inline-note" style="font-weight:700;margin-bottom:6px;">Evidence from raw events</div>`;
+      html += `<div class="drawer-block">`;
+      html += `<div class="chart-inline-note drawer-section-heading">Evidence from raw events</div>`;
 
       const candidatePoints = allTimelinePoints.filter(pt => sensorIds.includes(pt.sensor_id));
 
@@ -2168,9 +2213,9 @@ def html_end(timeline_points, daily_counts, hourly_counts):
           }}
         }});
 
-        html += `<div class="matching-summary-grid" style="margin-bottom:8px;">`;
+        html += `<div class="matching-summary-grid drawer-stat-grid">`;
         html += `<div class="matching-summary-item"><span class="matching-summary-value">${{escHtml(eventCount)}}</span><span class="matching-summary-label">Events</span></div>`;
-        html += `<div class="matching-summary-item"><span class="matching-summary-value" style="font-size:14px;">${{latestPoint ? escHtml(localDateLabel(latestPoint.time)) : "Unknown"}}</span><span class="matching-summary-label">Latest event</span></div>`;
+        html += `<div class="matching-summary-item"><span class="matching-summary-value matching-summary-value--sm">${{latestPoint ? escHtml(localDateLabel(latestPoint.time)) : "Unknown"}}</span><span class="matching-summary-label">Latest event</span></div>`;
         html += `</div>`;
 
         const models = Array.from(new Set(
@@ -2222,10 +2267,10 @@ def html_end(timeline_points, daily_counts, hourly_counts):
       html += `<div class="chart-inline-note">First seen: ${{escHtml(c.first_seen || "—")}}</div>`;
       html += `<div class="chart-inline-note">Last seen: ${{escHtml(c.last_seen || "—")}}</div>`;
 
-      if (c.match_text) html += `<div class="chart-inline-note" style="margin-top:8px;">Known match: ${{escHtml(c.match_text)}}</div>`;
+      if (c.match_text) html += `<div class="chart-inline-note chart-inline-note--spaced">Known match: ${{escHtml(c.match_text)}}</div>`;
 
       if (sensorIds.length > 0) {{
-        html += `<div class="chart-inline-note" style="margin-top:8px;">Sensor IDs: ${{escHtml(sensorIds.join(", "))}}</div>`;
+        html += `<div class="chart-inline-note chart-inline-note--spaced">Sensor IDs: ${{escHtml(sensorIds.join(", "))}}</div>`;
       }}
 
       return html;
