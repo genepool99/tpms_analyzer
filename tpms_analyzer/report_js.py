@@ -1,5 +1,12 @@
-JS_BLOCK = """    const refreshWebhookUrl = "refresh";
-    const vehicleMapEditWebhookUrl = "vehicle-map-edit";
+JS_BLOCK = """    function getServiceBaseUrl() {
+      if (window.location.pathname.startsWith("/local/")) {
+        return window.location.protocol + "//" + window.location.hostname + ":8099";
+      }
+      return "";
+    }
+
+    const refreshWebhookUrl = getServiceBaseUrl() + "/refresh";
+    const vehicleMapEditWebhookUrl = getServiceBaseUrl() + "/vehicle-map-edit";
     const PRESSURE_SUSPICIOUS_PSI = 120;
     const MAX_SCATTER_POINTS = 5000;
 
@@ -39,6 +46,14 @@ JS_BLOCK = """    const refreshWebhookUrl = "refresh";
 
       try {
         const payload = JSON.parse(button.dataset.payload || "{}");
+
+        if (payload.action === "add") {
+          const entered = window.prompt("Name this vehicle:", payload.name || "");
+          if (entered === null) return;
+          const trimmed = entered.trim();
+          if (!trimmed) return;
+          payload.name = trimmed;
+        }
 
         button.disabled = true;
         button.innerText = "Saving...";

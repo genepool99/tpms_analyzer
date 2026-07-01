@@ -9,7 +9,7 @@ from utils import normalize_sensor_id
 from vehicle_map import VALID_CATEGORIES, normalize_category
 
 
-VALID_ACTIONS = {"add", "update_category", "remove"}
+VALID_ACTIONS = {"add", "update_category", "remove", "edit"}
 MAX_NAME_LENGTH = 120
 MAX_NOTES_LENGTH = 500
 MAX_SENSOR_IDS = 12
@@ -70,6 +70,8 @@ def apply_payload(payload):
         result = update_vehicle_category(payload, vehicles, sensor_ids)
     elif action == "remove":
         result = remove_vehicle(vehicles, sensor_ids)
+    elif action == "edit":
+        result = edit_vehicle(payload, vehicles, sensor_ids)
     else:
         raise VehicleMapEditError(f"Unsupported action: {action}")
 
@@ -260,6 +262,27 @@ def update_vehicle_category(payload, vehicles, sensor_ids):
         "action": "updated_category",
         "name": clean_text(vehicle.get("name")),
         "category": category,
+        "matched_sensor_ids": match["matched_sensor_ids"],
+    }
+
+
+def edit_vehicle(payload, vehicles, sensor_ids):
+    name = validate_name(payload.get("name"))
+    notes = validate_notes(payload.get("notes"))
+    match = find_vehicle_by_sensor_overlap(vehicles, sensor_ids)
+
+    if not match:
+        raise VehicleMapEditError("No existing vehicle matched those sensor IDs.")
+
+    vehicle = match["vehicle"]
+    vehicle["name"] = name
+    vehicle["notes"] = notes
+
+    return {
+        "action": "edited",
+        "name": vehicle["name"],
+        "category": clean_text(vehicle.get("category")),
+        "sensor_ids": validate_existing_sensor_ids(vehicle),
         "matched_sensor_ids": match["matched_sensor_ids"],
     }
 
