@@ -182,7 +182,6 @@ def write_report(context):
     html += new_unknown_section(new_unknown_candidates)
     html += overlap_candidates_section(overlap_candidate_summaries)
     html += exact_candidates_section(exact_candidate_summaries)
-    html += candidate_details_section(overlap_candidate_summaries)
 
     html += """
     </div>
@@ -1512,63 +1511,6 @@ def exact_candidates_section(rows):
     html += """
         </tbody>
       </table>
-    </details>
-"""
-    return html
-
-
-def candidate_details_section(candidates):
-    if not candidates:
-        return ""
-
-    html = """
-    <details class="section">
-      <summary class="section-summary">
-        <span class="section-summary-main">
-          <span class="section-summary-title">Candidate Details</span>
-          <span class="section-summary-subtitle">Drill into Best Guess groups without changing the summary table.</span>
-        </span>
-        <span class="section-summary-action" aria-hidden="true"></span>
-      </summary>
-      <p class="muted">One card per Best Guess candidate. Use the summary table above for sorting and filtering.</p>
-"""
-
-    for index, candidate in enumerate(candidates, start=1):
-        sensor_ids = candidate["sensor_ids"]
-        known_vehicle = candidate["known_vehicle"]
-        category = candidate["category"] or ""
-        match_text = known_match_text(candidate["known_match"])
-
-        html += f"""
-      <div class="card" style="margin-bottom: 12px;">
-        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px;">
-          <strong>Candidate {index}</strong>
-          {pill(candidate["confidence"], "info")}
-          {pill(category_label(category or "unknown"), category or "unknown")}
-          {vehicle_status_html(known_vehicle, category)}
-        </div>
-        <div class="matching-summary-grid">
-          <div class="matching-summary-item">
-            <span class="matching-summary-value">{candidate["sensor_count"]}</span>
-            <span class="matching-summary-label">Sensors</span>
-          </div>
-          <div class="matching-summary-item">
-            <span class="matching-summary-value">{candidate["pass_count"]}</span>
-            <span class="matching-summary-label">Passes</span>
-          </div>
-        </div>
-        <div class="chart-inline-note" style="margin-top: 8px;">First seen: {display_time(candidate["first_seen"])} · Last seen: {display_time(candidate["last_seen"])}</div>
-        <div class="chart-inline-note" style="margin-top: 4px;">Sensor IDs: {safe_text(", ".join(sensor_ids))}</div>"""
-
-        if match_text:
-            html += f"""
-        <div class="chart-inline-note" style="margin-top: 4px;">Known match: {safe_text(match_text)}</div>"""
-
-        html += """
-      </div>
-"""
-
-    html += """
     </details>
 """
     return html
