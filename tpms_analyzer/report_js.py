@@ -112,7 +112,7 @@ JS_BLOCK = """    const refreshWebhookUrl = "refresh";
       let html = "";
 
       html += `<div class="drawer-pill-row">`;
-      if (c.confidence) html += `<span class="pill info">${escHtml(c.confidence)}</span>`;
+      if (c.confidence) html += `<span class="pill confidence">${escHtml(c.confidence)}</span>`;
       if (c.category) html += `<span class="pill ${escHtml(c.category)}">${escHtml(c.category)}</span>`;
       if (c.known_vehicle) html += `<span class="drawer-vehicle-name">${escHtml(c.known_vehicle)}</span>`;
       html += `</div>`;
@@ -127,7 +127,8 @@ JS_BLOCK = """    const refreshWebhookUrl = "refresh";
         html += `<div class="drawer-block">`;
         html += `<div class="drawer-pill-list">`;
         patternLabels.forEach(label => {
-          html += `<span class="pill info">${escHtml(label.text)}</span>`;
+          const labelClass = label.class || "pattern-default";
+          html += `<span class="pill ${labelClass}">${escHtml(label.text)}</span>`;
         });
         html += `</div>`;
         patternLabels.forEach(label => {

@@ -402,6 +402,41 @@ CSS_BLOCK = """
       color: var(--info-text);
     }
 
+    .confidence {
+      background: #e0f2fe;
+      color: #075985;
+    }
+
+    .pattern-regular {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .pattern-recent {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .pattern-fluke {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .pattern-quiet {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .pattern-occasional {
+      background: #ede9fe;
+      color: #5b21b6;
+    }
+
+    .pattern-default {
+      background: var(--info-bg);
+      color: var(--info-text);
+    }
+
     .note {
       background: #fff7ed;
       border: 1px solid #fed7aa;

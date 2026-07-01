@@ -131,6 +131,17 @@ def compute_pattern_labels(row, now_dt):
     return labels
 
 
+def pattern_label_class(label_text):
+    mapping = {
+        "Regular visitor": "pattern-regular",
+        "Maybe a fluke": "pattern-fluke",
+        "Recently active": "pattern-recent",
+        "Went quiet": "pattern-quiet",
+        "Occasional visitor": "pattern-occasional",
+    }
+    return mapping.get(label_text, "pattern-default")
+
+
 def write_report(context):
     events = context["events"]
     sensor_summaries = context["sensor_summaries"]
@@ -659,12 +670,11 @@ def overlap_candidates_section(rows):
         </span>
         <span class="section-summary-action" aria-hidden="true"></span>
       </summary>
-      <p class="muted">Suggested vehicle groups built from TPMS sensor IDs that repeatedly appear together. These are useful guesses, not confirmed identities. Example: if three or four tire sensors show up together across multiple passes, the analyzer treats them as a possible vehicle. Click Details to inspect the evidence.</p>
+      <p class="muted">Suggested vehicle groups found from TPMS sensors that are repeatedly heard together. Example: if the same 3–4 tire sensors show up together several times, they are probably one vehicle. Use Details to inspect the evidence before naming or ignoring the group.</p>
       <div class="note">
         <span class="muted">
-          Best Guess candidates are based on repeated co-occurrence of sensor IDs across separate passes.
-          More sensors seen together across more passes means stronger confidence.
-          These are suggestions from local radio observations, not confirmed vehicle identities.
+          <strong>How confidence is estimated</strong><br>
+          Confidence is based on how many sensors are in the group and how many times that group was seen. More sensors and more repeat sightings usually means a better guess.
         </span>
         <div class="matching-summary">
           <div class="matching-summary-title">Confidence tiers</div>
@@ -716,6 +726,16 @@ def overlap_candidates_section(rows):
         known_vehicle = row["known_vehicle"]
         category = row["category"] or ""
 
+        raw_labels = compute_pattern_labels(row, now_dt)
+        pattern_labels = [
+            {"text": lbl["text"], "caveat": lbl["caveat"], "class": pattern_label_class(lbl["text"])}
+            for lbl in raw_labels
+        ]
+        pattern_pills_html = "".join(
+            f'<span class="pill {lbl["class"]}">{safe_text(lbl["text"])}</span>'
+            for lbl in pattern_labels
+        )
+
         details_payload = {
             "title": known_vehicle or f"Candidate {index}",
             "confidence": row["confidence"],
@@ -727,7 +747,7 @@ def overlap_candidates_section(rows):
             "first_seen": row["first_seen"],
             "last_seen": row["last_seen"],
             "sensor_ids": sensor_ids,
-            "pattern_labels": compute_pattern_labels(row, now_dt),
+            "pattern_labels": pattern_labels,
         }
         details_button = f"""
                 <button
@@ -833,7 +853,7 @@ def overlap_candidates_section(rows):
             <td>{vehicle_status_html(row["known_vehicle"], row["category"])}</td>
             <td>{pill(category_label(row["category"] or "unknown"), row["category"] or "unknown")}</td>
             <td>{safe_text(known_match_text(row["known_match"]))}</td>
-            <td title="{row['sensor_count']} sensors · {row['pass_count']} passes">{pill(row["confidence"], "info")}</td>
+            <td title="{row['sensor_count']} sensors · {row['pass_count']} passes">{pill(row["confidence"], "confidence")}{"<br>" + pattern_pills_html if pattern_pills_html else ""}</td>
             <td>{row["pass_count"]}</td>
             <td>{row["sensor_count"]}</td>
             <td>{display_time(row["first_seen"])}</td>
