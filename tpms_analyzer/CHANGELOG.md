@@ -59,7 +59,7 @@
 ### Changed
 
 - Documented the required rtl_433 add-on setup.
-- Clarified that TPMS Analyzer reads from the configured rtl_433 JSONL log path.
+- Clarified that TireSignal reads from the configured rtl_433 JSONL log path.
 
 ## 0.3.0
 
