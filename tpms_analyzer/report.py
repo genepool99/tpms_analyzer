@@ -17,6 +17,7 @@ from utils import category_label, display_dt, display_time, parse_time, safe_tex
 
 from report_css import CSS_BLOCK
 from report_js import JS_BLOCK
+from report_templates import CANDIDATE_DRAWER_HTML
 
 
 def pill(text, category="info"):
@@ -1363,25 +1364,8 @@ def import_stats_section(stats, prune_stats):
 
 def html_end(timeline_points):
     return (
-        """
-  <div id="candidateDrawer" class="candidate-drawer"
-       role="dialog" aria-modal="true"
-       aria-hidden="true" aria-labelledby="candidateDrawerTitle">
-    <div class="candidate-drawer-backdrop" onclick="closeCandidateDrawer()"></div>
-    <div class="candidate-drawer-panel">
-      <div class="candidate-drawer-header">
-        <strong id="candidateDrawerTitle">Candidate details</strong>
-        <button type="button" class="candidate-drawer-close"
-                onclick="closeCandidateDrawer()">&#x2715; Close</button>
-      </div>
-      <div id="candidateDrawerBody"></div>
-    </div>
-  </div>
-
-  </main>
-
-  <script>
-"""
+        CANDIDATE_DRAWER_HTML
+        + "\n  </main>\n\n  <script>\n"
         + f"    const allTimelinePoints = {json.dumps(timeline_points)};\n"
         + JS_BLOCK
         + "  </script>\n</body>\n</html>"
