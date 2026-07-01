@@ -271,6 +271,19 @@ JS_BLOCK = """    const refreshWebhookUrl = "refresh";
       });
     }
 
+    function hideReportLoadingOverlay() {
+      const overlay = document.getElementById("reportLoadingOverlay");
+      if (!overlay) return;
+      overlay.classList.add("hidden");
+      window.setTimeout(() => {
+        if (overlay && overlay.parentNode) {
+          overlay.parentNode.removeChild(overlay);
+        }
+      }, 300);
+    }
+
+    window.addEventListener("load", hideReportLoadingOverlay);
+
     makeTablesSortable();
 
     let chartsRendered = false;
@@ -342,6 +355,10 @@ JS_BLOCK = """    const refreshWebhookUrl = "refresh";
     if (savedTab && document.getElementById(savedTab)) {
       showReportTab(savedTab);
     }
+
+    requestAnimationFrame(() => {
+      window.setTimeout(hideReportLoadingOverlay, 50);
+    });
 
     function parseChartTime(value) {
       const date = new Date(value);

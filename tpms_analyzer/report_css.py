@@ -671,6 +671,59 @@ CSS_BLOCK = """
       margin-bottom: 12px;
     }
 
+    .report-loading-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(246, 247, 249, 0.92);
+      transition: opacity 0.25s ease;
+    }
+
+    .report-loading-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .report-loading-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px 28px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    .report-loading-spinner {
+      width: 28px;
+      height: 28px;
+      border: 3px solid var(--border);
+      border-top-color: var(--info-text);
+      border-radius: 999px;
+      flex-shrink: 0;
+      animation: report-loading-spin 0.75s linear infinite;
+    }
+
+    @keyframes report-loading-spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .report-loading-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .report-loading-subtitle {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
     .drawer-vehicle-name {
       font-weight: 600;
     }

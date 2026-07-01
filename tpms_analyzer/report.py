@@ -304,6 +304,15 @@ def html_start(generated_at):
   <style>{CSS_BLOCK}  </style>
 </head>
 <body>
+  <div id="reportLoadingOverlay" class="report-loading-overlay" role="status" aria-live="polite">
+    <div class="report-loading-card">
+      <div class="report-loading-spinner" aria-hidden="true"></div>
+      <div>
+        <div class="report-loading-title">Loading TPMS report…</div>
+        <div class="report-loading-subtitle">Preparing tables, candidates, and charts.</div>
+      </div>
+    </div>
+  </div>
   <header>
     <div class="header-row">
       <div>
