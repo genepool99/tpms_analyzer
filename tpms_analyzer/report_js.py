@@ -52,6 +52,27 @@ JS_BLOCK = """    function getServiceBaseUrl() {
       await submitVehicleMapPayload(button, payload);
     }
 
+    function showVehicleActionStatus(message) {
+      let el = document.getElementById("vehicleActionStatus");
+      if (!el) {
+        el = document.createElement("div");
+        el.id = "vehicleActionStatus";
+        el.setAttribute("role", "status");
+        el.setAttribute("aria-live", "polite");
+        el.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;" +
+          "padding:0.6em 1em;background:#b91c1c;color:#fff;" +
+          "font-size:0.95em;text-align:center;";
+        document.body.insertBefore(el, document.body.firstChild);
+      }
+      el.textContent = message;
+      el.hidden = false;
+      clearTimeout(el._hideTimer);
+      el._hideTimer = setTimeout(() => {
+        el.hidden = true;
+        el.textContent = "";
+      }, 6000);
+    }
+
     async function submitVehicleMapPayload(button, payload, options = {}) {
       const originalText = button.innerText;
       const { keepModalOpenOnError = false, modalSaveButton = null } = options;
@@ -107,6 +128,7 @@ JS_BLOCK = """    function getServiceBaseUrl() {
           }
         } else {
           button.innerText = "Failed";
+          showVehicleActionStatus(error.message);
 
           setTimeout(() => {
             button.innerText = originalText;
