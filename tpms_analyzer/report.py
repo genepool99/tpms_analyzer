@@ -138,6 +138,14 @@ def write_report(context):
       <button
         type="button"
         class="tab-button"
+        data-tab-target="tab-candidates"
+        onclick="showReportTab('tab-candidates')"
+      >
+        Candidates
+      </button>
+      <button
+        type="button"
+        class="tab-button"
         data-tab-target="tab-charts"
         onclick="showReportTab('tab-charts')"
       >
@@ -179,6 +187,11 @@ def write_report(context):
     if ignored_vehicles:
         html += ignored_vehicle_section(ignored_vehicles)
 
+    html += """
+    </div>
+
+    <div id="tab-candidates" class="tab-panel">
+"""
     html += new_unknown_section(new_unknown_candidates)
     html += overlap_candidates_section(overlap_candidate_summaries)
     html += exact_candidates_section(exact_candidate_summaries)
