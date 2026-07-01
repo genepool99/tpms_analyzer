@@ -284,7 +284,26 @@ JS_BLOCK = """    const refreshWebhookUrl = "refresh";
 
     window.addEventListener("load", hideReportLoadingOverlay);
 
+    function setupBackToTopButton() {
+      const button = document.getElementById("backToTopButton");
+      if (!button) return;
+
+      function updateVisibility() {
+        const shouldShow = window.scrollY > window.innerHeight;
+        button.classList.toggle("visible", shouldShow);
+      }
+
+      button.addEventListener("click", () => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+
+      window.addEventListener("scroll", updateVisibility, { passive: true });
+      window.addEventListener("resize", updateVisibility);
+      updateVisibility();
+    }
+
     makeTablesSortable();
+    setupBackToTopButton();
 
     let chartsRendered = false;
     let chartsRenderPending = false;

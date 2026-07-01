@@ -12,4 +12,7 @@ CANDIDATE_DRAWER_HTML = """
       <div id="candidateDrawerBody"></div>
     </div>
   </div>
+  <button id="backToTopButton" class="back-to-top-button" type="button" aria-label="Back to top">
+    &#x2191; Top
+  </button>
 """

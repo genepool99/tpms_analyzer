@@ -761,4 +761,40 @@ CSS_BLOCK = """
     .chart-inline-note--spaced {
       margin-top: 8px;
     }
+
+    .back-to-top-button {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 15;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 10px 16px;
+      background: var(--card);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(8px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .back-to-top-button.visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .back-to-top-button:hover {
+      background: var(--soft);
+      border-color: var(--muted);
+    }
+
+    .back-to-top-button:focus-visible {
+      outline: 3px solid rgba(37, 99, 235, 0.35);
+      outline-offset: 3px;
+    }
 """
