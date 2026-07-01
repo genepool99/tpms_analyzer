@@ -1304,6 +1304,28 @@ def overlap_candidates_section(rows):
         known_vehicle = row["known_vehicle"]
         category = row["category"] or ""
 
+        details_payload = {
+            "title": known_vehicle or f"Candidate {index}",
+            "confidence": row["confidence"],
+            "category": category,
+            "known_vehicle": known_vehicle,
+            "match_text": known_match_text(row["known_match"]),
+            "sensor_count": row["sensor_count"],
+            "pass_count": row["pass_count"],
+            "first_seen": row["first_seen"],
+            "last_seen": row["last_seen"],
+            "sensor_ids": sensor_ids,
+        }
+        details_button = f"""
+                <button
+                  type="button"
+                  class="small-action-button"
+                  data-candidate="{safe_text(json.dumps(details_payload))}"
+                  onclick="openCandidateDrawer(this)"
+                >
+                  Details
+                </button>"""
+
         if known_vehicle:
             known_payload = {
                 "action": "update_category",
@@ -1357,6 +1379,7 @@ def overlap_candidates_section(rows):
                 >
                   Ignore
                 </button>"""
+            action_buttons += details_button
         else:
             candidate_name = f"Unknown Candidate {index}"
             candidate_notes = f"Pass count: {row['pass_count']}"
@@ -1390,7 +1413,7 @@ def overlap_candidates_section(rows):
                   onclick="editVehicleMapFromButton(this)"
                 >
                   Ignore
-                </button>"""
+                </button>""" + details_button
 
         html += f"""
           <tr>
