@@ -42,19 +42,20 @@ JS_BLOCK = """    function getServiceBaseUrl() {
     }
 
     async function editVehicleMapFromButton(button) {
+      const payload = JSON.parse(button.dataset.payload || "{}");
+
+      if (payload.action === "add") {
+        openVehicleEditModal(button, payload);
+        return;
+      }
+
+      await submitVehicleMapPayload(button, payload);
+    }
+
+    async function submitVehicleMapPayload(button, payload) {
       const originalText = button.innerText;
 
       try {
-        const payload = JSON.parse(button.dataset.payload || "{}");
-
-        if (payload.action === "add") {
-          const entered = window.prompt("Name this vehicle:", payload.name || "");
-          if (entered === null) return;
-          const trimmed = entered.trim();
-          if (!trimmed) return;
-          payload.name = trimmed;
-        }
-
         button.disabled = true;
         button.innerText = "Saving...";
 
@@ -84,6 +85,119 @@ JS_BLOCK = """    function getServiceBaseUrl() {
           button.disabled = false;
         }, 4000);
       }
+    }
+
+    let _vehicleEditPendingButton = null;
+    let _vehicleEditPendingPayload = null;
+
+    function openVehicleEditModal(button, payload) {
+      const modal = document.getElementById("vehicleEditModal");
+      const titleEl = document.getElementById("vehicleEditModalTitle");
+      const nameInput = document.getElementById("vehicleEditNameInput");
+      const notesInput = document.getElementById("vehicleEditNotesInput");
+      const errorEl = document.getElementById("vehicleEditError");
+
+      const category = payload.category || "";
+      if (category === "watch") {
+        titleEl.textContent = "Add to watchlist";
+      } else if (category === "ignore") {
+        titleEl.textContent = "Ignore vehicle";
+      } else {
+        titleEl.textContent = "Save vehicle";
+      }
+
+      nameInput.value = payload.name || "";
+      notesInput.value = payload.notes || "";
+      errorEl.hidden = true;
+      errorEl.textContent = "";
+
+      _vehicleEditPendingButton = button;
+      _vehicleEditPendingPayload = payload;
+
+      updateVehicleEditModalState();
+
+      modal.classList.add("open");
+      modal.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+      document.addEventListener("keydown", onVehicleEditModalKeydown);
+
+      nameInput.focus();
+    }
+
+    function closeVehicleEditModal() {
+      const modal = document.getElementById("vehicleEditModal");
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", onVehicleEditModalKeydown);
+      _vehicleEditPendingButton = null;
+      _vehicleEditPendingPayload = null;
+    }
+
+    function onVehicleEditModalKeydown(event) {
+      if (event.key === "Escape") closeVehicleEditModal();
+    }
+
+    function updateVehicleEditModalState() {
+      const nameInput = document.getElementById("vehicleEditNameInput");
+      const notesInput = document.getElementById("vehicleEditNotesInput");
+      const nameCount = document.getElementById("vehicleEditNameCount");
+      const notesCount = document.getElementById("vehicleEditNotesCount");
+      const saveButton = document.getElementById("vehicleEditSaveButton");
+
+      const nameLen = nameInput.value.length;
+      const notesLen = notesInput.value.length;
+      const nameMax = Number(nameInput.maxLength);
+      const notesMax = Number(notesInput.maxLength);
+
+      nameCount.textContent = `${nameLen}/${nameMax}`;
+      notesCount.textContent = `${notesLen}/${notesMax}`;
+
+      const nameInvalid = nameInput.value.trim() === "" || nameLen > nameMax;
+      const notesInvalid = notesLen > notesMax;
+
+      nameCount.classList.toggle("invalid", nameLen > nameMax);
+      notesCount.classList.toggle("invalid", notesInvalid);
+
+      saveButton.disabled = nameInvalid || notesInvalid;
+    }
+
+    function submitVehicleEditModal() {
+      const nameInput = document.getElementById("vehicleEditNameInput");
+      const notesInput = document.getElementById("vehicleEditNotesInput");
+      const errorEl = document.getElementById("vehicleEditError");
+
+      const name = nameInput.value.trim();
+      const notes = notesInput.value.trim();
+
+      if (!name) {
+        errorEl.textContent = "Name is required.";
+        errorEl.hidden = false;
+        nameInput.focus();
+        return;
+      }
+
+      if (!_vehicleEditPendingButton || !_vehicleEditPendingPayload) return;
+
+      const button = _vehicleEditPendingButton;
+      const payload = _vehicleEditPendingPayload;
+      payload.name = name;
+      payload.notes = notes;
+
+      closeVehicleEditModal();
+      submitVehicleMapPayload(button, payload);
+    }
+
+    function setupVehicleEditModal() {
+      const nameInput = document.getElementById("vehicleEditNameInput");
+      const notesInput = document.getElementById("vehicleEditNotesInput");
+      const saveButton = document.getElementById("vehicleEditSaveButton");
+
+      if (!nameInput || !notesInput || !saveButton) return;
+
+      nameInput.addEventListener("input", updateVehicleEditModalState);
+      notesInput.addEventListener("input", updateVehicleEditModalState);
+      saveButton.addEventListener("click", submitVehicleEditModal);
     }
 
     function escHtml(value) {
@@ -319,6 +433,7 @@ JS_BLOCK = """    function getServiceBaseUrl() {
 
     makeTablesSortable();
     setupBackToTopButton();
+    setupVehicleEditModal();
 
     let chartsRendered = false;
     let chartsRenderPending = false;
