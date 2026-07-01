@@ -18,6 +18,12 @@ SERVICE_PORT = int(os.environ.get("TPMS_SERVICE_PORT", 8099))
 
 _run_lock = threading.Lock()
 
+STATIC_PNGS = frozenset({
+    "tiresignal-logo.png",
+    "tiresignal-favicon-32.png",
+    "tiresignal-favicon-180.png",
+})
+
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -123,6 +129,13 @@ class TPMSHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", "0")
         self.end_headers()
 
+    def send_png(self, body: bytes):
+        self.send_response(200)
+        self.send_header("Content-Type", "image/png")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
     def send_html(self, code, body: bytes):
         self.send_response(code)
         self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -131,6 +144,18 @@ class TPMSHandler(BaseHTTPRequestHandler):
             self.send_header(name, value)
         self.end_headers()
         self.wfile.write(body)
+
+    def _send_static_png(self, filename):
+        png_path = REPORT_PATH.parent / filename
+        if not png_path.exists():
+            self.send_json(404, {"ok": False, "error": "Asset not found"})
+            return
+        try:
+            body = png_path.read_bytes()
+        except Exception as exc:
+            self.send_json(500, {"ok": False, "error": str(exc)})
+            return
+        self.send_png(body)
 
     def _send_report(self):
         if not REPORT_PATH.exists():
@@ -148,6 +173,8 @@ class TPMSHandler(BaseHTTPRequestHandler):
             self.send_json(200, {"ok": True, "service": "tpms_analyzer"})
         elif self.path in ("/", "/report"):
             self._send_report()
+        elif self.path.lstrip("/") in STATIC_PNGS:
+            self._send_static_png(self.path.lstrip("/"))
         else:
             self.send_json(404, {"ok": False, "error": "Not found"})
 
