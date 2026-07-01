@@ -14,6 +14,7 @@ TPMS Analyzer is a Home Assistant add-on for `rtl_433` TPMS JSONL logs. It impor
 * Runs manual and scheduled refreshes inside the add-on.
 
 ![TPMS Analyzer report screenshot](assets/tpms-report-screenshot.png)
+
 ![TPMS Analyzer report screenshot](assets/tpms-report-screenshot2.png)
 
 ## Requirements

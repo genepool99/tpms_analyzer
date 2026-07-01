@@ -32,6 +32,7 @@ export TPMS_MIN_REPEAT_CLUSTER_COUNT="${MIN_REPEAT_CLUSTER_COUNT}"
 
 bashio::log.info "Starting TPMS Analyzer service"
 bashio::log.info "TPMS Analyzer version: $(bashio::addon.version)"
+export TPMS_VERSION="$(bashio::addon.version)"
 bashio::log.info "Using TPMS log path: ${TPMS_LOG_PATH}"
 bashio::log.info "Using TPMS vehicle map path: ${TPMS_VEHICLE_MAP_PATH}"
 bashio::log.info "Using TPMS service port: ${TPMS_SERVICE_PORT}"

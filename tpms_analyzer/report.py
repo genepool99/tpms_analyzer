@@ -2,6 +2,7 @@ import json
 from datetime import datetime, timezone
 
 from tpms_config import (
+    APP_VERSION,
     DB_PATH,
     LOG_PATH,
     MAX_CANDIDATE_SENSOR_COUNT,
@@ -31,6 +32,38 @@ def vehicle_status_html(name, category):
         return pill(name, category or "known")
 
     return pill("Unknown", "unknown")
+
+
+def row_actions_menu(items, label="Vehicle actions"):
+    toggle = (
+        f'<button type="button"'
+        f' class="small-action-button row-actions-toggle"'
+        f' aria-label="{safe_text(label)}"'
+        f' aria-haspopup="menu"'
+        f' aria-expanded="false"'
+        f' onclick="toggleRowActionsMenu(this)">&#x22EE;</button>'
+    )
+    menu_items_html = ""
+    for item in items:
+        danger = " row-actions-menu-item--danger" if item.get("danger") else ""
+        handler = safe_text(item.get("handler", "rowMenuSubmitAction"))
+        data_attr = safe_text(item.get("data_attr", "payload"))
+        payload = safe_text(json.dumps(item["payload"]))
+        menu_items_html += (
+            f'<button type="button"'
+            f' class="row-actions-menu-item{danger}"'
+            f' role="menuitem"'
+            f' data-{data_attr}="{payload}"'
+            f' onclick="{handler}(this)">{safe_text(item["label"])}</button>'
+        )
+    return (
+        f'<div class="row-actions">'
+        f'{toggle}'
+        f'<div class="row-actions-menu" role="menu" hidden>'
+        f'{menu_items_html}'
+        f'</div>'
+        f'</div>'
+    )
 
 
 def known_match_text(match):
@@ -318,7 +351,7 @@ def html_start(generated_at):
       <div>
         <h1>TPMS Report</h1>
         <div class="muted">
-          Generated: {safe_text(generated_at)} · Source: <code>{safe_text(LOG_PATH)}</code>
+          Generated: {safe_text(generated_at)} · Version: v{safe_text(APP_VERSION)} · Source: <code>{safe_text(LOG_PATH)}</code>
         </div>
       </div>
       <button id="refreshButton" class="refresh-button" onclick="refreshReport()">
@@ -398,8 +431,8 @@ def known_vehicle_section(rows):
             <th>First Seen</th>
             <th>Last Seen</th>
             <th>Sensor IDs</th>
-            <th>Actions</th>
             <th>Notes</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -409,10 +442,11 @@ def known_vehicle_section(rows):
         sensor_ids = row["sensor_ids"]
         category = row["category"]
 
-        known_payload = {
-            "action": "update_category",
+        edit_payload = {
+            "action": "add",
+            "edit_mode": "saved_vehicle",
             "name": row["name"],
-            "category": "known",
+            "category": category,
             "notes": row["notes"],
             "sensor_ids": sensor_ids,
         }
@@ -425,6 +459,14 @@ def known_vehicle_section(rows):
             "sensor_ids": sensor_ids,
         }
 
+        known_payload = {
+            "action": "update_category",
+            "name": row["name"],
+            "category": "known",
+            "notes": row["notes"],
+            "sensor_ids": sensor_ids,
+        }
+
         ignore_payload = {
             "action": "update_category",
             "name": row["name"],
@@ -433,39 +475,23 @@ def known_vehicle_section(rows):
             "sensor_ids": sensor_ids,
         }
 
-        edit_payload = {
-            "action": "add",
-            "edit_mode": "saved_vehicle",
+        remove_payload = {
+            "action": "remove",
             "name": row["name"],
-            "category": row["category"],
-            "notes": row["notes"],
             "sensor_ids": sensor_ids,
         }
 
-        move_button = ""
+        menu_items = [
+            {"label": "Edit", "payload": edit_payload, "handler": "rowMenuEdit"},
+        ]
 
         if category == "known":
-            move_button = f"""
-                <button
-                  type="button"
-                  class="small-action-button watch-action"
-                  data-payload="{safe_text(json.dumps(watch_payload))}"
-                  onclick="editVehicleMapFromButton(this)"
-                >
-                  Move to Watch
-                </button>
-"""
+            menu_items.append({"label": "Move to Watch", "payload": watch_payload, "handler": "rowMenuSubmitAction"})
         elif category == "watch":
-            move_button = f"""
-                <button
-                  type="button"
-                  class="small-action-button known-action"
-                  data-payload="{safe_text(json.dumps(known_payload))}"
-                  onclick="editVehicleMapFromButton(this)"
-                >
-                  Move to Known
-                </button>
-"""
+            menu_items.append({"label": "Move to Known", "payload": known_payload, "handler": "rowMenuSubmitAction"})
+
+        menu_items.append({"label": "Ignore", "payload": ignore_payload, "handler": "rowMenuSubmitAction"})
+        menu_items.append({"label": "Delete", "payload": remove_payload, "handler": "rowMenuSubmitAction", "danger": True})
 
         html += f"""
           <tr>
@@ -477,28 +503,8 @@ def known_vehicle_section(rows):
             <td>{display_time(row["first_seen"])}</td>
             <td>{display_time(row["last_seen"])}</td>
             <td>{safe_text(", ".join(sensor_ids))}</td>
-            <td>
-              <div class="action-buttons">
-                <button
-                  type="button"
-                  class="small-action-button"
-                  data-payload="{safe_text(json.dumps(edit_payload))}"
-                  onclick="editVehicleMapFromButton(this)"
-                >
-                  Edit
-                </button>
-                {move_button}
-                <button
-                  type="button"
-                  class="small-action-button ignore-action"
-                  data-payload="{safe_text(json.dumps(ignore_payload))}"
-                  onclick="editVehicleMapFromButton(this)"
-                >
-                  Ignore
-                </button>
-              </div>
-            </td>
             <td>{safe_text(row["notes"])}</td>
+            <td class="actions-cell">{row_actions_menu(menu_items)}</td>
           </tr>
 """
 
@@ -529,8 +535,8 @@ def ignored_vehicle_section(rows):
           <tr>
             <th>Name</th>
             <th>Sensor IDs</th>
-            <th>Actions</th>
             <th>Notes</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -541,47 +547,46 @@ def ignored_vehicle_section(rows):
         name = row.get("name", "Ignored Vehicle")
         notes = row.get("notes", "")
 
+        edit_payload = {
+            "action": "add",
+            "edit_mode": "saved_vehicle",
+            "name": name,
+            "category": "ignore",
+            "notes": notes,
+            "sensor_ids": sensor_ids,
+        }
+
         known_payload = {
             "action": "update_category",
-            "name": name,
             "category": "known",
-            "notes": notes,
             "sensor_ids": sensor_ids,
         }
 
         watch_payload = {
             "action": "update_category",
-            "name": name,
             "category": "watch",
-            "notes": notes,
             "sensor_ids": sensor_ids,
         }
+
+        remove_payload = {
+            "action": "remove",
+            "name": name,
+            "sensor_ids": sensor_ids,
+        }
+
+        menu_items = [
+            {"label": "Edit", "payload": edit_payload, "handler": "rowMenuEdit"},
+            {"label": "Move to Known", "payload": known_payload, "handler": "rowMenuSubmitAction"},
+            {"label": "Move to Watch", "payload": watch_payload, "handler": "rowMenuSubmitAction"},
+            {"label": "Delete", "payload": remove_payload, "handler": "rowMenuSubmitAction", "danger": True},
+        ]
 
         html += f"""
           <tr>
             <td>{safe_text(name)}</td>
             <td>{safe_text(", ".join(sensor_ids))}</td>
-            <td>
-              <div class="action-buttons">
-                <button
-                  type="button"
-                  class="small-action-button known-action"
-                  data-payload="{safe_text(json.dumps(known_payload))}"
-                  onclick="editVehicleMapFromButton(this)"
-                >
-                  Move to Known
-                </button>
-                <button
-                  type="button"
-                  class="small-action-button watch-action"
-                  data-payload="{safe_text(json.dumps(watch_payload))}"
-                  onclick="editVehicleMapFromButton(this)"
-                >
-                  Move to Watch
-                </button>
-              </div>
-            </td>
             <td>{safe_text(notes)}</td>
+            <td class="actions-cell">{row_actions_menu(menu_items)}</td>
           </tr>
 """
 
@@ -616,8 +621,8 @@ def new_unknown_section(rows):
             <th>First Seen</th>
             <th>Last Seen</th>
             <th>Sensor IDs</th>
-            <th>Actions</th>
             <th>Copy/Paste JSON</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -651,6 +656,11 @@ def new_unknown_section(rows):
             "sensor_ids": sensor_ids,
         }
 
+        menu_items = [
+            {"label": "Add Watch", "payload": watch_payload, "handler": "rowMenuEdit"},
+            {"label": "Ignore", "payload": ignore_payload, "handler": "rowMenuEdit"},
+        ]
+
         html += f"""
           <tr>
             <td>{pill(row["confidence"], "info")}</td>
@@ -659,27 +669,8 @@ def new_unknown_section(rows):
             <td>{display_time(row["first_seen"])}</td>
             <td>{display_time(row["last_seen"])}</td>
             <td>{safe_text(", ".join(sensor_ids))}</td>
-            <td>
-              <div class="action-buttons">
-                <button
-                  type="button"
-                  class="small-action-button watch-action"
-                  data-payload="{safe_text(json.dumps(watch_payload))}"
-                  onclick="editVehicleMapFromButton(this)"
-                >
-                  Add Watch
-                </button>
-                <button
-                  type="button"
-                  class="small-action-button ignore-action"
-                  data-payload="{safe_text(json.dumps(ignore_payload))}"
-                  onclick="editVehicleMapFromButton(this)"
-                >
-                  Ignore
-                </button>
-              </div>
-            </td>
             <td><div class="copybox">{safe_text(json.dumps(snippet, indent=2))}</div></td>
+            <td class="actions-cell">{row_actions_menu(menu_items, label="Candidate actions")}</td>
           </tr>
 """
 
@@ -780,16 +771,6 @@ def overlap_candidates_section(rows):
             "sensor_ids": sensor_ids,
             "pattern_labels": pattern_labels,
         }
-        details_button = f"""
-                <button
-                  type="button"
-                  class="small-action-button"
-                  data-candidate="{safe_text(json.dumps(details_payload))}"
-                  onclick="openCandidateDrawer(this)"
-                >
-                  Details
-                </button>"""
-
         if known_vehicle:
             known_payload = {
                 "action": "update_category",
@@ -812,38 +793,14 @@ def overlap_candidates_section(rows):
                 "notes": "",
                 "sensor_ids": sensor_ids,
             }
-            action_buttons = ""
+            menu_items = []
             if category != "known":
-                action_buttons += f"""
-                <button
-                  type="button"
-                  class="small-action-button known-action"
-                  data-payload="{safe_text(json.dumps(known_payload))}"
-                  onclick="editVehicleMapFromButton(this)"
-                >
-                  Move to Known
-                </button>"""
+                menu_items.append({"label": "Move to Known", "payload": known_payload, "handler": "rowMenuSubmitAction"})
             if category != "watch":
-                action_buttons += f"""
-                <button
-                  type="button"
-                  class="small-action-button watch-action"
-                  data-payload="{safe_text(json.dumps(watch_payload))}"
-                  onclick="editVehicleMapFromButton(this)"
-                >
-                  Move to Watch
-                </button>"""
+                menu_items.append({"label": "Move to Watch", "payload": watch_payload, "handler": "rowMenuSubmitAction"})
             if category != "ignore":
-                action_buttons += f"""
-                <button
-                  type="button"
-                  class="small-action-button ignore-action"
-                  data-payload="{safe_text(json.dumps(ignore_payload))}"
-                  onclick="editVehicleMapFromButton(this)"
-                >
-                  Ignore
-                </button>"""
-            action_buttons += details_button
+                menu_items.append({"label": "Ignore", "payload": ignore_payload, "handler": "rowMenuSubmitAction"})
+            menu_items.append({"label": "Details", "payload": details_payload, "handler": "openCandidateDrawer", "data_attr": "candidate"})
         else:
             candidate_name = f"Unknown Candidate {index}"
             candidate_notes = f"Pass count: {row['pass_count']}"
@@ -861,23 +818,11 @@ def overlap_candidates_section(rows):
                 "notes": candidate_notes,
                 "sensor_ids": sensor_ids,
             }
-            action_buttons = f"""
-                <button
-                  type="button"
-                  class="small-action-button watch-action"
-                  data-payload="{safe_text(json.dumps(watch_payload))}"
-                  onclick="editVehicleMapFromButton(this)"
-                >
-                  Add Watch
-                </button>
-                <button
-                  type="button"
-                  class="small-action-button ignore-action"
-                  data-payload="{safe_text(json.dumps(ignore_payload))}"
-                  onclick="editVehicleMapFromButton(this)"
-                >
-                  Ignore
-                </button>""" + details_button
+            menu_items = [
+                {"label": "Add Watch", "payload": watch_payload, "handler": "rowMenuEdit"},
+                {"label": "Ignore", "payload": ignore_payload, "handler": "rowMenuEdit"},
+                {"label": "Details", "payload": details_payload, "handler": "openCandidateDrawer", "data_attr": "candidate"},
+            ]
 
         html += f"""
           <tr>
@@ -890,10 +835,7 @@ def overlap_candidates_section(rows):
             <td>{display_time(row["first_seen"])}</td>
             <td>{display_time(row["last_seen"])}</td>
             <td>{safe_text(", ".join(row["sensor_ids"]))}</td>
-            <td>
-              <div class="action-buttons">{action_buttons}
-              </div>
-            </td>
+            <td class="actions-cell">{row_actions_menu(menu_items, label="Candidate actions")}</td>
           </tr>
 """
 
@@ -964,37 +906,13 @@ def exact_candidates_section(rows):
                 "notes": "",
                 "sensor_ids": sensor_ids,
             }
-            action_buttons = ""
+            menu_items = []
             if category != "known":
-                action_buttons += f"""
-                <button
-                  type="button"
-                  class="small-action-button known-action"
-                  data-payload="{safe_text(json.dumps(known_payload))}"
-                  onclick="editVehicleMapFromButton(this)"
-                >
-                  Move to Known
-                </button>"""
+                menu_items.append({"label": "Move to Known", "payload": known_payload, "handler": "rowMenuSubmitAction"})
             if category != "watch":
-                action_buttons += f"""
-                <button
-                  type="button"
-                  class="small-action-button watch-action"
-                  data-payload="{safe_text(json.dumps(watch_payload))}"
-                  onclick="editVehicleMapFromButton(this)"
-                >
-                  Move to Watch
-                </button>"""
+                menu_items.append({"label": "Move to Watch", "payload": watch_payload, "handler": "rowMenuSubmitAction"})
             if category != "ignore":
-                action_buttons += f"""
-                <button
-                  type="button"
-                  class="small-action-button ignore-action"
-                  data-payload="{safe_text(json.dumps(ignore_payload))}"
-                  onclick="editVehicleMapFromButton(this)"
-                >
-                  Ignore
-                </button>"""
+                menu_items.append({"label": "Ignore", "payload": ignore_payload, "handler": "rowMenuSubmitAction"})
         else:
             candidate_name = f"Exact Repeat Candidate {index}"
             candidate_notes = f"Pass count: {row['pass_count']}"
@@ -1012,23 +930,10 @@ def exact_candidates_section(rows):
                 "notes": candidate_notes,
                 "sensor_ids": sensor_ids,
             }
-            action_buttons = f"""
-                <button
-                  type="button"
-                  class="small-action-button watch-action"
-                  data-payload="{safe_text(json.dumps(watch_payload))}"
-                  onclick="editVehicleMapFromButton(this)"
-                >
-                  Add Watch
-                </button>
-                <button
-                  type="button"
-                  class="small-action-button ignore-action"
-                  data-payload="{safe_text(json.dumps(ignore_payload))}"
-                  onclick="editVehicleMapFromButton(this)"
-                >
-                  Ignore
-                </button>"""
+            menu_items = [
+                {"label": "Add Watch", "payload": watch_payload, "handler": "rowMenuEdit"},
+                {"label": "Ignore", "payload": ignore_payload, "handler": "rowMenuEdit"},
+            ]
 
         html += f"""
           <tr>
@@ -1041,10 +946,7 @@ def exact_candidates_section(rows):
             <td>{display_time(row["first_seen"])}</td>
             <td>{display_time(row["last_seen"])}</td>
             <td>{safe_text(", ".join(row["sensor_ids"]))}</td>
-            <td>
-              <div class="action-buttons">{action_buttons}
-              </div>
-            </td>
+            <td class="actions-cell">{row_actions_menu(menu_items, label="Candidate actions")}</td>
           </tr>
 """
 

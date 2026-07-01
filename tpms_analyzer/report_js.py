@@ -273,7 +273,134 @@ JS_BLOCK = """    function getServiceBaseUrl() {
         .replace(/'/g, "&#39;");
     }
 
+    let _rowActionsListenerAttached = false;
+
+    function _onRowActionsOutsideClick(event) {
+      if (event.target.closest(".row-actions")) return;
+      closeAllRowActionsMenus();
+    }
+
+    function _onRowActionsEscape(event) {
+      if (event.key !== "Escape") return;
+      if (!document.querySelector(".row-actions-menu:not([hidden])")) return;
+      closeAllRowActionsMenus({ restoreFocus: true });
+    }
+
+    function _attachRowActionsListeners() {
+      if (_rowActionsListenerAttached) return;
+      _rowActionsListenerAttached = true;
+      document.addEventListener("pointerdown", _onRowActionsOutsideClick);
+      document.addEventListener("keydown", _onRowActionsEscape);
+    }
+
+    function _detachRowActionsListeners() {
+      _rowActionsListenerAttached = false;
+      document.removeEventListener("pointerdown", _onRowActionsOutsideClick);
+      document.removeEventListener("keydown", _onRowActionsEscape);
+    }
+
+    function closeRowActionsMenu(menu, toggle, options = {}) {
+      if (!menu) return;
+      menu.hidden = true;
+      menu.style.top = "";
+      menu.style.left = "";
+      if (toggle) toggle.setAttribute("aria-expanded", "false");
+      if (options.restoreFocus && toggle) toggle.focus();
+    }
+
+    function closeAllRowActionsMenus(options = {}) {
+      const openMenus = Array.from(
+        document.querySelectorAll(".row-actions-menu:not([hidden])")
+      );
+      if (!openMenus.length) return;
+
+      let focusToggle = null;
+      openMenus.forEach((menu, index) => {
+        const wrapper = menu.closest(".row-actions");
+        const toggle = wrapper ? wrapper.querySelector(".row-actions-toggle") : null;
+        if (options.restoreFocus && index === 0 && toggle) focusToggle = toggle;
+        closeRowActionsMenu(menu, toggle, {});
+      });
+
+      if (focusToggle) focusToggle.focus();
+      _detachRowActionsListeners();
+    }
+
+    function positionRowActionsMenu(menu, toggle) {
+      const GAP = 6;
+      const rect = toggle.getBoundingClientRect();
+      const menuWidth = menu.offsetWidth || 160;
+      const menuHeight = menu.offsetHeight || 100;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+
+      let left = rect.right - menuWidth;
+      if (left < 4) left = 4;
+      if (left + menuWidth > vw - 4) left = vw - menuWidth - 4;
+
+      let top = rect.bottom + GAP + menuHeight <= vh
+        ? rect.bottom + GAP
+        : rect.top - GAP - menuHeight;
+      top = Math.max(4, Math.min(top, vh - menuHeight - 4));
+
+      menu.style.left = `${left}px`;
+      menu.style.top = `${top}px`;
+    }
+
+    function toggleRowActionsMenu(toggle) {
+      const wrapper = toggle.closest(".row-actions");
+      if (!wrapper) return;
+      const menu = wrapper.querySelector(".row-actions-menu");
+      if (!menu) return;
+
+      if (!menu.hidden) {
+        closeRowActionsMenu(menu, toggle, { restoreFocus: true });
+        _detachRowActionsListeners();
+        return;
+      }
+
+      closeAllRowActionsMenus();
+      menu.hidden = false;
+      toggle.setAttribute("aria-expanded", "true");
+      positionRowActionsMenu(menu, toggle);
+      _attachRowActionsListeners();
+
+      const firstItem = menu.querySelector(".row-actions-menu-item");
+      if (firstItem) requestAnimationFrame(() => firstItem.focus());
+    }
+
+    function rowMenuEdit(menuItem) {
+      const payload = JSON.parse(menuItem.dataset.payload || "{}");
+      const wrapper = menuItem.closest(".row-actions");
+      const toggle = wrapper ? wrapper.querySelector(".row-actions-toggle") : null;
+      const menu = menuItem.closest(".row-actions-menu");
+      closeRowActionsMenu(menu, toggle, {});
+      _detachRowActionsListeners();
+      openVehicleEditModal(toggle, payload);
+    }
+
+    function rowMenuSubmitAction(menuItem) {
+      const payload = JSON.parse(menuItem.dataset.payload || "{}");
+      const wrapper = menuItem.closest(".row-actions");
+      const toggle = wrapper ? wrapper.querySelector(".row-actions-toggle") : null;
+      const menu = menuItem.closest(".row-actions-menu");
+
+      if (payload.action === "remove") {
+        const label = payload.name ? `"${payload.name}"` : "this saved vehicle";
+        if (!window.confirm(`Remove ${label} from your vehicle map?`)) {
+          closeRowActionsMenu(menu, toggle, { restoreFocus: true });
+          _detachRowActionsListeners();
+          return;
+        }
+      }
+
+      closeRowActionsMenu(menu, toggle, {});
+      _detachRowActionsListeners();
+      submitVehicleMapPayload(toggle, payload);
+    }
+
     function openCandidateDrawer(button) {
+      closeAllRowActionsMenus();
       const candidate = JSON.parse(button.dataset.candidate || "{}");
       const drawer = document.getElementById("candidateDrawer");
       const titleEl = document.getElementById("candidateDrawerTitle");

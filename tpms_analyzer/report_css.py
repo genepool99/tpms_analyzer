@@ -894,4 +894,97 @@ CSS_BLOCK = """
       gap: 8px;
       margin-top: 4px;
     }
+
+    .actions-cell {
+      text-align: right;
+      white-space: nowrap;
+      width: 1%;
+    }
+
+    .row-actions {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .row-actions-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      min-width: unset;
+      padding: 0;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      font-size: 18px;
+      line-height: 1;
+      letter-spacing: normal;
+      cursor: pointer;
+    }
+
+    .row-actions-toggle:hover {
+      background: var(--soft);
+      border-color: var(--muted);
+    }
+
+    .row-actions-toggle:focus-visible {
+      outline: 3px solid rgba(37, 99, 235, 0.30);
+      outline-offset: 2px;
+    }
+
+    .row-actions-toggle[aria-expanded="true"] {
+      background: var(--soft);
+      border-color: var(--muted);
+    }
+
+    .row-actions-menu {
+      position: fixed;
+      z-index: 40;
+      min-width: 140px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+      padding: 4px 0;
+      margin: 0;
+    }
+
+    .row-actions-menu-item {
+      display: block;
+      width: 100%;
+      padding: 8px 14px;
+      background: none;
+      border: none;
+      border-radius: 0;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .row-actions-menu-item:hover,
+    .row-actions-menu-item:focus-visible {
+      background: var(--soft);
+      outline: none;
+    }
+
+    .row-actions-menu-item:focus-visible {
+      outline: 3px solid rgba(37, 99, 235, 0.30);
+      outline-offset: -2px;
+    }
+
+    .row-actions-menu-item--danger {
+      color: #b91c1c;
+    }
+
+    .row-actions-menu-item--danger:hover,
+    .row-actions-menu-item--danger:focus-visible {
+      background: #fef2f2;
+    }
 """

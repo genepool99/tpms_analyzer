@@ -42,6 +42,7 @@ UNKNOWN_MULTI_SENSOR_RETENTION_DAYS = env_int("TPMS_UNKNOWN_MULTI_SENSOR_RETENTI
 PRESERVE_LABELED_SENSOR_EVENTS = True
 
 SERVICE_PORT = env_int("TPMS_SERVICE_PORT", 8099)
+APP_VERSION = os.environ.get("TPMS_VERSION", "dev")
 
 # Home Assistant serves /config/www as /local
 REPORT_PATH = env_path("TPMS_REPORT_PATH", "/config/www/rtl_433/tpms_report.html")
