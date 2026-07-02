@@ -1237,6 +1237,7 @@ def sensor_section(rows):
         <span class="section-summary-action" aria-hidden="true"></span>
       </summary>
       <p class="muted">Repeated TPMS sensor IDs seen 5 or more times, limited to the 1,000 most recently active rows. One-off and low-repeat signals are hidden here to keep the report responsive.</p>
+      <p class="muted">Signal is based on average rtl_433 RSSI/SNR for this receiver. It indicates radio decode quality, not exact distance.</p>
       <div class="toolbar">
         <input placeholder="Search sensor IDs, models, names..." oninput="filterTable('sensorTable', this.value)">
       </div>

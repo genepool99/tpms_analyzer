@@ -30,6 +30,8 @@ def summarize_sensors(events, sensor_to_vehicle):
         temps = [r["temperature_c"] for r in rows if r["temperature_c"] is not None]
         rssi_values = [r["rssi"] for r in rows if r["rssi"] is not None]
         snr_values = [r["snr"] for r in rows if r["snr"] is not None]
+        avg_rssi = avg(rssi_values)
+        avg_snr = avg(snr_values)
 
         vehicle_info = sensor_to_vehicle.get(sensor_id, {})
 
@@ -44,8 +46,8 @@ def summarize_sensors(events, sensor_to_vehicle):
             "avg_pressure_psi": avg(pressures_psi),
             "avg_pressure_kpa": avg(pressures_kpa),
             "avg_temperature_c": avg(temps),
-            "avg_rssi": (avg_rssi := avg(rssi_values)),
-            "avg_snr": (avg_snr := avg(snr_values)),
+            "avg_rssi": avg_rssi,
+            "avg_snr": avg_snr,
             "signal_quality": signal_quality_label(avg_rssi, avg_snr, len(rssi_values)),
         })
 
