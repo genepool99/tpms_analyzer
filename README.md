@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="tpms_analyzer/tiresignal-logo.png" alt="TireSignal logo" width="420">
+</p>
+
 # TireSignal
 
 TireSignal is a Home Assistant add-on for `rtl_433` TPMS JSONL logs. It imports tire-pressure sensor events, groups likely vehicle passes, helps identify known, watch, and unknown sensors, and produces a Home Assistant-friendly report for reviewing activity and labeling vehicles.
