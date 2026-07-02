@@ -295,6 +295,7 @@ def write_report(context):
             "pressure_kpa": e["pressure_kpa"],
             "rssi": e["rssi"],
             "snr": e["snr"],
+            "noise": e["noise"],
             "battery_ok": e["battery_ok"],
             "maybe_battery": e.get("maybe_battery"),
             "protocol": e["protocol"],
