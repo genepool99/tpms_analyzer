@@ -1220,6 +1220,13 @@ def recent_passes_section(rows):
 
 
 def sensor_section(rows):
+    SQ_CLASS = {
+        "Strong": "known",
+        "Normal": "info",
+        "Weak": "pattern-fluke",
+        "Unknown": "unknown",
+    }
+
     html = """
     <details class="section">
       <summary class="section-summary">
@@ -1247,6 +1254,7 @@ def sensor_section(rows):
             <th>Avg Temp C</th>
             <th>Avg RSSI</th>
             <th>Avg SNR</th>
+            <th>Signal</th>
           </tr>
         </thead>
         <tbody>
@@ -1254,6 +1262,7 @@ def sensor_section(rows):
 
     for row in rows:
         pressure = row["avg_pressure_psi"] if row["avg_pressure_psi"] is not None else row["avg_pressure_kpa"]
+        sq = row.get("signal_quality", "Unknown")
 
         html += f"""
           <tr>
@@ -1268,6 +1277,7 @@ def sensor_section(rows):
             <td>{safe_text(row["avg_temperature_c"] if row["avg_temperature_c"] is not None else "")}</td>
             <td>{safe_text(row["avg_rssi"] if row["avg_rssi"] is not None else "")}</td>
             <td>{safe_text(row["avg_snr"] if row["avg_snr"] is not None else "")}</td>
+            <td>{pill(sq, SQ_CLASS.get(sq, "unknown"))}</td>
           </tr>
 """
 

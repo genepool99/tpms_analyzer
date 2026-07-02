@@ -127,6 +127,24 @@ def confidence_label(sensor_count, pass_count):
     return "Single sensor"
 
 
+def signal_quality_label(avg_rssi, avg_snr, rssi_count):
+    if rssi_count == 0 or avg_rssi is None:
+        return "Unknown"
+
+    if avg_snr is not None:
+        if avg_snr >= 13.0:
+            return "Strong"
+        if avg_snr >= 9.0:
+            return "Normal"
+        return "Weak"
+
+    if avg_rssi >= -4.0:
+        return "Strong"
+    if avg_rssi >= -8.0:
+        return "Normal"
+    return "Weak"
+
+
 def category_label(category):
     category = str(category or "").lower()
 

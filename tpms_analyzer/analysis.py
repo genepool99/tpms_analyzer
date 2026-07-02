@@ -9,7 +9,7 @@ from tpms_config import (
     PASS_WINDOW_SECONDS,
     POSSIBLE_SENSOR_COUNT,
 )
-from utils import confidence_label
+from utils import confidence_label, signal_quality_label
 from vehicle_map import match_known_vehicle
 
 
@@ -44,8 +44,9 @@ def summarize_sensors(events, sensor_to_vehicle):
             "avg_pressure_psi": avg(pressures_psi),
             "avg_pressure_kpa": avg(pressures_kpa),
             "avg_temperature_c": avg(temps),
-            "avg_rssi": avg(rssi_values),
-            "avg_snr": avg(snr_values),
+            "avg_rssi": (avg_rssi := avg(rssi_values)),
+            "avg_snr": (avg_snr := avg(snr_values)),
+            "signal_quality": signal_quality_label(avg_rssi, avg_snr, len(rssi_values)),
         })
 
     summaries.sort(key=lambda r: r["last_seen"], reverse=True)
