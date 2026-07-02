@@ -16,6 +16,12 @@ CSS_BLOCK = """
       --unknown-text: #92400e;
       --info-bg: #ede9fe;
       --info-text: #5b21b6;
+      --accent: #2563eb;
+      --accent-strong: #1d4ed8;
+      --accent-soft: #eff6ff;
+      --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+      --shadow-md: 0 10px 30px rgba(15, 23, 42, 0.08);
+      --radius-lg: 18px;
     }
 
     body {
@@ -26,12 +32,13 @@ CSS_BLOCK = """
     }
 
     header {
-      padding: 24px;
-      background: var(--card);
+      padding: 14px 24px;
+      background: linear-gradient(to bottom, #ffffff, #f5f8ff);
       border-bottom: 1px solid var(--border);
       position: sticky;
       top: 0;
       z-index: 10;
+      box-shadow: var(--shadow-sm);
     }
 
     h1 {
@@ -504,22 +511,28 @@ CSS_BLOCK = """
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
+      gap: 12px;
+      flex-wrap: wrap;
     }
 
     .refresh-button {
-      border: 1px solid var(--border);
+      border: 1px solid var(--accent-strong);
       border-radius: 10px;
-      padding: 10px 14px;
-      background: var(--soft);
-      color: var(--text);
+      padding: 10px 18px;
+      background: var(--accent);
+      color: #ffffff;
+      font-size: 14px;
       font-weight: 700;
+      letter-spacing: 0.01em;
       cursor: pointer;
       white-space: nowrap;
+      box-shadow: var(--shadow-sm);
+      transition: background 0.15s ease, box-shadow 0.15s ease;
     }
 
     .refresh-button:hover {
-      filter: brightness(0.97);
+      background: var(--accent-strong);
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.28);
     }
 
     .refresh-button:disabled {
@@ -529,37 +542,42 @@ CSS_BLOCK = """
 
     .tabs {
       display: flex;
-      gap: 8px;
+      gap: 4px;
       align-items: center;
       flex-wrap: wrap;
       margin: 16px 0 20px;
-      padding: 8px;
+      padding: 6px;
       border: 1px solid var(--border);
-      border-radius: 14px;
-      background: var(--card);
+      border-radius: var(--radius-lg);
+      background: var(--soft);
+      box-shadow: var(--shadow-sm);
     }
 
     .tab-button {
       border: 1px solid transparent;
-      border-radius: 10px;
-      padding: 10px 14px;
+      border-radius: 12px;
+      padding: 9px 16px;
       background: transparent;
       color: var(--muted);
-      font-weight: 800;
+      font-size: 14px;
+      font-weight: 700;
       cursor: pointer;
       white-space: nowrap;
+      transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
     }
 
     .tab-button:hover {
-      background: var(--soft);
+      background: #ffffff;
       color: var(--text);
+      border-color: var(--border);
     }
 
     .tab-button.active {
-      border-color: var(--border);
-      background: var(--soft);
-      color: var(--text);
-      box-shadow: 0 1px 2px rgba(0,0,0,.04);
+      border-color: var(--accent);
+      background: #ffffff;
+      color: var(--accent);
+      font-weight: 800;
+      box-shadow: var(--shadow-sm);
     }
 
     .tab-panel {

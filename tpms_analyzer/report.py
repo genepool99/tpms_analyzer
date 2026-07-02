@@ -434,7 +434,10 @@ def html_start(generated_at):
 .brand-title {{ margin: 0; line-height: 1; }}
 .brand-logo {{ height: 90px; width: auto; display: block; }}
 @media (max-width: 480px) {{ .brand-logo {{ height: 36px; }} }}
-.header-meta {{ font-size: 12px; letter-spacing: 0.01em; margin-top: 6px; opacity: 0.75; }}
+.header-meta {{ display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }}
+.header-chip {{ display: inline-flex; align-items: baseline; gap: 5px; font-size: 12px; line-height: 1.4; font-weight: 600; padding: 4px 9px; border-radius: 999px; background: #ffffff; color: var(--text); border: 1px solid var(--border); box-shadow: var(--shadow-sm); white-space: nowrap; }}
+.header-chip-label {{ color: var(--muted); font-weight: 700; }}
+.header-chip code {{ font-size: 12px; color: var(--text); background: transparent; padding: 0; }}
   </style>
 </head>
 <body>
@@ -451,8 +454,10 @@ def html_start(generated_at):
     <div class="header-row">
       <div>
         <h1 class="brand-title"><img class="brand-logo" src="tiresignal-logo.png" alt="TireSignal"></h1>
-        <div class="muted header-meta">
-          Generated: {safe_text(generated_at)} · Version: v{safe_text(APP_VERSION)} · Source: <code>{safe_text(LOG_PATH)}</code>
+        <div class="header-meta">
+          <span class="header-chip"><span class="header-chip-label">Generated</span>{safe_text(generated_at)}</span>
+          <span class="header-chip"><span class="header-chip-label">Version</span>v{safe_text(APP_VERSION)}</span>
+          <span class="header-chip" title="{safe_text(LOG_PATH)}"><span class="header-chip-label">Source</span><code>{safe_text(LOG_PATH.name)}</code></span>
         </div>
       </div>
       <button id="refreshButton" class="refresh-button" onclick="refreshReport()">
