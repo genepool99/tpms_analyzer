@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.3.8
+
+### Changed
+
+- Switched generated report logo/favicon handling from embedded base64 to served PNG assets.
+- Added transparent report-specific TireSignal PNG assets for the generated report.
+- Added startup publishing of report PNG assets into the Home Assistant `/local/rtl_433/` report directory.
+- Added strict allowlisted PNG serving for direct `:8099/report` access so the direct report and Home Assistant `/local/rtl_433/tpms_report.html` view render consistently.
+- Removed the generated base64 report asset module now that report assets are served as PNG files.
+- Updated TireSignal logo and favicon PNG assets to use real transparency.
+
+### Compatibility
+
+- Kept the existing Home Assistant add-on slug, runtime data paths, output filenames, health response service identifier, and `TPMS_*` environment variables unchanged for existing installs and automations.
+
 ## 0.3.7
 
 ### Changed
